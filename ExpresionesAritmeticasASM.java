@@ -129,8 +129,7 @@ public class ExpresionesAritmeticasASM {
                 String operando2 = matcher.group(2);
                 String temporal = "T" + temporalCounter++;
 
-                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2,
-                        nombresOperadores[i]);
+                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
                 temporales.add(operacion);
 
                 String instruccionASM = String.format("%s %s, %s", nombresOperadores[i], operando1, operando2);
@@ -146,7 +145,7 @@ public class ExpresionesAritmeticasASM {
     // *****************************************
     // Generar archivo ASM con las instrucciones generadas
     private static void generarArchivoASM(List<String> instruccionesASM) {
-        try (FileWriter writer = new FileWriter("resultado.asm")) {
+        try (FileWriter writer = new FileWriter("resultado.ASM")) {
             writer.write(".model small\n");
             writer.write(".stack 100h\n");
             writer.write(".data\n");
@@ -167,7 +166,7 @@ public class ExpresionesAritmeticasASM {
             writer.write("    int 21h\n");
             writer.write("end start\n");
 
-            System.out.println("Archivo ASM generado exitosamente: resultado.asm");
+            System.out.println("Archivo ASM generado exitosamente: Resultado.ASM");
         } catch (IOException e) {
             System.err.println("Error al generar el archivo ASM: " + e.getMessage());
         }
