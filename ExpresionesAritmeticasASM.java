@@ -102,7 +102,7 @@ public class ExpresionesAritmeticasASM {
                 String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
                 temporales.add(operacion);
 
-                String instruccionASM = String.format("%s %s, %s", nombresOperadores[i], operando1, operando2);
+                String instruccionASM = generarInstruccionASM(nombresOperadores[i], operando1, operando2, temporal);
                 instruccionesASM.add(instruccionASM);
 
                 expresion = expresion.replaceFirst(Pattern.quote(matcher.group(0)), temporal);
@@ -112,11 +112,42 @@ public class ExpresionesAritmeticasASM {
         return expresion;
     }
 
+    private static String generarInstruccionASM(String operador, String operando1, String operando2, String temporal) {
+        StringBuilder instruccion = new StringBuilder();
+
+        switch (operador) {
+            case "MUL":
+                instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
+                instruccion.append(String.format("MUL %s", operando2)).append("\n");
+                instruccion.append(String.format("MOV %s, AX", temporal));
+                break;
+
+            case "ADD":
+                instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
+                instruccion.append(String.format("ADD AX, %s", operando2)).append("\n");
+                instruccion.append(String.format("MOV %s, AX", temporal));
+                break;
+
+            case "SUB":
+                instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
+                instruccion.append(String.format("SUB AX, %s", operando2)).append("\n");
+                instruccion.append(String.format("MOV %s, AX", temporal));
+                break;
+
+            case "MOV":
+                instruccion.append(String.format("MOV AX, %s", operando2)).append("\n");
+                instruccion.append(String.format("MOV %s, AX", operando1));
+                break;
+        }
+
+        return instruccion.toString();
+    }
+
     private static void generarArchivoASM(List<String> instruccionesASM, Map<String, Double> valoresVariables, String variableIzquierda) {
         try (FileWriter writer = new FileWriter("resultado.ASM")) {
-            writer.write(".model small\n");
-            writer.write(".stack 100h\n");
-            writer.write(".data\n");
+            writer.write(".MODEL SMALL\n");
+            writer.write(".STACK 100h\n");
+            writer.write(".DATA\n");
 
             // Declarar variables con sus valores correspondientes
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
@@ -131,16 +162,48 @@ public class ExpresionesAritmeticasASM {
                 writer.write("T" + i + " DW ?\n");
             }
 
-            writer.write(".code\n");
+            writer.write("result DB 'Resultado: $'\n");
+            writer.write("value DB 5 DUP('$') ; Buffer para el valor de X en texto\n");
+
+            writer.write(".CODE\n");
             writer.write("start:\n");
+
+            writer.write("    MOV AX, @DATA\n");
+            writer.write("    MOV DS, AX\n");
 
             for (String instruccion : instruccionesASM) {
                 writer.write("    " + instruccion + "\n");
             }
 
-            writer.write("    mov ah, 4Ch\n");
-            writer.write("    int 21h\n");
-            writer.write("end start\n");
+            writer.write("    ; Convertir X a texto\n");
+            writer.write("    MOV AX, X\n");
+            writer.write("    MOV CX, 5\n");
+            writer.write("    LEA DI, value\n");
+            writer.write("    MOV BX, 10\n");
+            writer.write("next_digit:\n");
+            writer.write("    XOR DX, DX\n");
+            writer.write("    DIV BX\n");
+            writer.write("    ADD DL, '0'\n");
+            writer.write("    DEC DI\n");
+            writer.write("    MOV [DI], DL\n");
+            writer.write("    DEC CX\n");
+            writer.write("    TEST AX, AX\n");
+            writer.write("    JNZ next_digit\n");
+
+            writer.write("    ; Mostrar resultado\n");
+            writer.write("    LEA DX, result\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n");
+
+            writer.write("    LEA DX, value\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n");
+
+            writer.write("    ; Terminar programa\n");
+            writer.write("    MOV AH, 4Ch\n");
+            writer.write("    INT 21h\n");
+
+            writer.write("END start\n");
 
             System.out.println("Archivo ASM generado exitosamente: Resultado.ASM");
         } catch (IOException e) {
@@ -149,6 +212,6 @@ public class ExpresionesAritmeticasASM {
     }
 
     private static String convertirValorASM(double valor) {
-        return String.format("%.2f", valor).replace(".", "");
+        return String.format("%.0f", valor);
     }
 }
