@@ -118,26 +118,36 @@ public class ExpresionesAritmeticasASM {
         switch (operador) {
             case "MUL":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
-                instruccion.append(String.format("MUL %s", operando2)).append("\n");
-                instruccion.append(String.format("MOV %s, AX", temporal));
+                instruccion.append(String.format("MUL %s", operando2)).append("\n"); // Resultado en AX
+                instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
+                break;
+
+            case "DIV":
+                instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
+                instruccion.append("XOR DX, DX").append("\n"); // Limpiar DX para la división
+                instruccion.append(String.format("DIV %s", operando2)).append("\n"); // Cociente en AX
+                instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
                 break;
 
             case "ADD":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
-                instruccion.append(String.format("ADD AX, %s", operando2)).append("\n");
-                instruccion.append(String.format("MOV %s, AX", temporal));
+                instruccion.append(String.format("ADD AX, %s", operando2)).append("\n"); // Suma en AX
+                instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
                 break;
 
             case "SUB":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
-                instruccion.append(String.format("SUB AX, %s", operando2)).append("\n");
-                instruccion.append(String.format("MOV %s, AX", temporal));
+                instruccion.append(String.format("SUB AX, %s", operando2)).append("\n"); // Resta en AX
+                instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
                 break;
 
             case "MOV":
-                instruccion.append(String.format("MOV AX, %s", operando2)).append("\n");
-                instruccion.append(String.format("MOV %s, AX", operando1));
+                instruccion.append(String.format("MOV AX, %s", operando2)).append("\n"); // Cargar valor en AX
+                instruccion.append(String.format("MOV %s, AX", operando1)); // Mover a destino
                 break;
+
+            default:
+                throw new IllegalArgumentException("Operador no soportado: " + operador);
         }
 
         return instruccion.toString();
@@ -175,8 +185,8 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    " + instruccion + "\n");
             }
 
-            writer.write("    ; Convertir X a texto\n");
-            writer.write("    MOV AX, X\n");
+            writer.write("    ; Convertir " + variableIzquierda + " a texto\n");
+            writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, value\n");
             writer.write("    MOV BX, 10\n");
