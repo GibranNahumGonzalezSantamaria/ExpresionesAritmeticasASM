@@ -9,7 +9,7 @@ public class ExpresionesAritmeticasASM {
     private static int temporalCounter = 1;
 
     public static void main(String[] args) {
-        //*****************************************
+        // *****************************************
         // Entrada de la expresión aritmética
         String input;
         Scanner scanner = new Scanner(System.in);
@@ -21,11 +21,11 @@ public class ExpresionesAritmeticasASM {
             // Scanner no se cierra aquí, se usará más adelante
         }
 
-        //*****************************************
+        // *****************************************
         // Limpieza de la expresión para eliminar espacios
         input = input.replaceAll("\\s+", "");
 
-        //*****************************************
+        // *****************************************
         // Identificar la variable a la izquierda del '=' y las variables usadas
         String variableIzquierda = identificarVariableIzquierda(input);
         Set<String> variables = identificarVariables(input);
@@ -33,40 +33,40 @@ public class ExpresionesAritmeticasASM {
         // Excluir la variable izquierda (no se solicita su valor)
         variables.remove(variableIzquierda);
 
-        //*****************************************
+        // *****************************************
         // Solicitar al usuario los valores de las variables identificadas
         Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
 
-        //*****************************************
+        // *****************************************
         // Reemplazar variables en la expresión con sus nombres
         for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
             input = input.replaceAll(Pattern.quote(entry.getKey()), entry.getKey());
         }
 
-        //*****************************************
+        // *****************************************
         // Procesar la expresión aritmética y generar temporales
         List<String> temporales = new ArrayList<>();
         List<String> instruccionesASM = new ArrayList<>();
 
         String resultado = procesarExpresion(input, temporales, instruccionesASM);
 
-        //*****************************************
+        // *****************************************
         // Imprimir los temporales generados y el resultado final
         for (String temporal : temporales) {
             System.out.println(temporal);
         }
         System.out.println("Resultado final: " + resultado);
 
-        //*****************************************
+        // *****************************************
         // Generar el archivo ASM con las instrucciones
         generarArchivoASM(instruccionesASM);
 
-        //*****************************************
+        // *****************************************
         // Cerrar el Scanner al final del programa
         scanner.close();
     }
 
-    //*****************************************
+    // *****************************************
     // Identificar la variable a la izquierda del '='
     private static String identificarVariableIzquierda(String expresion) {
         int indiceIgual = expresion.indexOf('=');
@@ -76,7 +76,7 @@ public class ExpresionesAritmeticasASM {
         return null;
     }
 
-    //*****************************************
+    // *****************************************
     // Identificar las variables presentes en la expresión
     private static Set<String> identificarVariables(String expresion) {
         Set<String> variables = new HashSet<>();
@@ -90,7 +90,7 @@ public class ExpresionesAritmeticasASM {
         return variables;
     }
 
-    //*****************************************
+    // *****************************************
     // Solicitar los valores de las variables identificadas al usuario
     private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Scanner scanner) {
         Map<String, Double> valoresVariables = new HashMap<>();
@@ -104,7 +104,7 @@ public class ExpresionesAritmeticasASM {
         return valoresVariables;
     }
 
-    //*****************************************
+    // *****************************************
     // Procesar la expresión aritmética y generar temporales
     private static String procesarExpresion(String expresion, List<String> temporales, List<String> instruccionesASM) {
         Pattern parentesisPattern = Pattern.compile("\\(([^()]+)\\)");
@@ -129,7 +129,8 @@ public class ExpresionesAritmeticasASM {
                 String operando2 = matcher.group(2);
                 String temporal = "T" + temporalCounter++;
 
-                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
+                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2,
+                        nombresOperadores[i]);
                 temporales.add(operacion);
 
                 String instruccionASM = String.format("%s %s, %s", nombresOperadores[i], operando1, operando2);
@@ -142,7 +143,7 @@ public class ExpresionesAritmeticasASM {
         return expresion;
     }
 
-    //*****************************************
+    // *****************************************
     // Generar archivo ASM con las instrucciones generadas
     private static void generarArchivoASM(List<String> instruccionesASM) {
         try (FileWriter writer = new FileWriter("resultado.asm")) {
