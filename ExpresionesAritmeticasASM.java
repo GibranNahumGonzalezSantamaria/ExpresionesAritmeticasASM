@@ -42,7 +42,13 @@ public class ExpresionesAritmeticasASM {
         List<String> instruccionesASM = new ArrayList<>();
 
         // Procesar la expresión aritmética y generar temporales
-        procesarExpresion(input, temporales, instruccionesASM);
+        String resultado = procesarExpresion(input, temporales, instruccionesASM);
+
+        // Imprimir los temporales generados y el resultado final
+        for (String temporal : temporales) {
+            System.out.println(temporal);
+        }
+        System.out.println("Resultado final: " + resultado);
 
         // Generar el archivo ASM con las instrucciones y variables declaradas
         generarArchivoASM(instruccionesASM, valoresVariables);
@@ -111,7 +117,8 @@ public class ExpresionesAritmeticasASM {
                 String temporal = "T" + temporalCounter++;
 
                 // Crear la operación para los temporales y las instrucciones ASM
-                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
+                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2,
+                        nombresOperadores[i]);
                 temporales.add(operacion);
 
                 String instruccionASM = String.format("%s %s, %s", nombresOperadores[i], operando1, operando2);
