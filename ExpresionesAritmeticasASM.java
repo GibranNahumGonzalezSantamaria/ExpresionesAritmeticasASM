@@ -9,41 +9,31 @@ public class ExpresionesAritmeticasASM {
 
     public static void main(String[] args) {
         String input;
-        Scanner scanner = new Scanner(System.in);
-
-        try {
-            System.out.println("Ingrese la expresión aritmética: ");
-            input = scanner.nextLine();
-        } finally {
-            // Scanner no se cierra aquí porque se usará más adelante
+        try (Scanner scanner = new Scanner(System.in)) {
+            try {
+                System.out.println("Ingrese la expresión aritmética: ");
+                input = scanner.nextLine();
+            } finally {
+                // Scanner no se cierra aquí porque se usará más adelante
+            }
+            input = input.replaceAll("\\s+", "");
+            String variableIzquierda = identificarVariableIzquierda(input);
+            Set<String> variables = identificarVariables(input);
+            variables.remove(variableIzquierda);
+            Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
+            for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
+                input = input.replaceAll(Pattern.quote(entry.getKey()), entry.getKey());
+            }
+            List<String> temporales = new ArrayList<>();
+            List<String> instruccionesASM = new ArrayList<>();
+            String resultado = procesarExpresion(input, temporales, instruccionesASM);
+            for (String temporal : temporales) {
+                System.out.println(temporal);
+            }
+            System.out.println("Resultado final: " + resultado);
+            generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
         }
-
-        input = input.replaceAll("\\s+", "");
-
-        String variableIzquierda = identificarVariableIzquierda(input);
-        Set<String> variables = identificarVariables(input);
-
-        variables.remove(variableIzquierda);
-
-        Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
-
-        for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
-            input = input.replaceAll(Pattern.quote(entry.getKey()), entry.getKey());
-        }
-
-        List<String> temporales = new ArrayList<>();
-        List<String> instruccionesASM = new ArrayList<>();
-
-        String resultado = procesarExpresion(input, temporales, instruccionesASM);
-
-        for (String temporal : temporales) {
-            System.out.println(temporal);
-        }
-        System.out.println("Resultado final: " + resultado);
-
-        generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
-
-        scanner.close();
+        // Scanner no se cierra aquí porque se usará más adelante
     }
 
     private static String identificarVariableIzquierda(String expresion) {
@@ -116,37 +106,37 @@ public class ExpresionesAritmeticasASM {
         StringBuilder instruccion = new StringBuilder();
 
         switch (operador) {
-            case "MUL":
+            case "MUL" -> {
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("MUL %s", operando2)).append("\n"); // Resultado en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-                break;
+            }
 
-            case "DIV":
+            case "DIV" -> {
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append("XOR DX, DX").append("\n"); // Limpiar DX para la división
                 instruccion.append(String.format("DIV %s", operando2)).append("\n"); // Cociente en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-                break;
+            }
 
-            case "ADD":
+            case "ADD" -> {
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("ADD AX, %s", operando2)).append("\n"); // Suma en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-                break;
+            }
 
-            case "SUB":
+            case "SUB" -> {
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("SUB AX, %s", operando2)).append("\n"); // Resta en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-                break;
+            }
 
-            case "MOV":
+            case "MOV" -> {
                 instruccion.append(String.format("MOV AX, %s", operando2)).append("\n"); // Cargar valor en AX
                 instruccion.append(String.format("MOV %s, AX", operando1)); // Mover a destino
-                break;
+            }
 
-            default:
+            default ->
                 throw new IllegalArgumentException("Operador no soportado: " + operador);
         }
 
