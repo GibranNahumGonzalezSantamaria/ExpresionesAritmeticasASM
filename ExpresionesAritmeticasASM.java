@@ -185,20 +185,30 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    " + instruccion + "\n");
             }
 
+            // Manejar la conversión a texto para números negativos
             writer.write("    ; Convertir " + variableIzquierda + " a texto\n");
             writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, value\n");
             writer.write("    MOV BX, 10\n");
+            writer.write("    TEST AX, AX\n");
+            writer.write("    JNS no_negativo\n");
+            writer.write("    MOV byte ptr [DI], '-'   ; Coloca el signo negativo en el buffer\n");
+            writer.write("    INC DI\n");
+            writer.write("    NEG AX\n");
+            writer.write("no_negativo:\n");
             writer.write("next_digit:\n");
             writer.write("    XOR DX, DX\n");
             writer.write("    DIV BX\n");
             writer.write("    ADD DL, '0'\n");
-            writer.write("    DEC DI\n");
             writer.write("    MOV [DI], DL\n");
+            writer.write("    INC DI\n");
             writer.write("    DEC CX\n");
             writer.write("    TEST AX, AX\n");
             writer.write("    JNZ next_digit\n");
+
+            writer.write("    ; Null-terminate the string\n");
+            writer.write("    MOV byte ptr [DI], '$'\n");
 
             writer.write("    ; Mostrar resultado\n");
             writer.write("    LEA DX, result\n");
