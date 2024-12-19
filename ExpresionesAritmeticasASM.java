@@ -166,7 +166,7 @@ public class ExpresionesAritmeticasASM {
         switch (operador) {
             case "MUL" -> {
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
-                instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n"); // Resultado en AX
+                instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n");
                 instruccion.append("    MUL BX\n"); // Resultado en BX
                 instruccion.append(String.format("    MOV %s, AX", temporal)); // Guardar en temporal
             }
@@ -174,7 +174,8 @@ public class ExpresionesAritmeticasASM {
             case "DIV" -> {
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("    XOR DX, DX")).append("\n"); // Limpiar DX para la división
-                instruccion.append(String.format("    DIV %s", operando2)).append("\n"); // Cociente en AX
+                instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n");
+                instruccion.append("    DIV BX\n");  // Cociente en AX
                 instruccion.append(String.format("    MOV %s, AX", temporal)); // Guardar en temporal
             }
 
