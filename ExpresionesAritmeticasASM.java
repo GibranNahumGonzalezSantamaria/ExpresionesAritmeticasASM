@@ -44,7 +44,7 @@ public class ExpresionesAritmeticasASM {
         // Obtener valores de las variables desde la entrada del usuario
         Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
 
-        // Reemplazar las variables en la expresión con sus nombres
+        // Reemplazar las variables en la expresión con sus valores
         for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
             input = input.replaceAll(Pattern.quote(entry.getKey()), entry.getKey());
         }
