@@ -150,15 +150,31 @@ public class ExpresionesAritmeticasASM {
 
         return variables;
     }
-
+    
     // Solicita valores de las variables al usuario
     private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Scanner scanner) {
         Map<String, Double> valoresVariables = new HashMap<>();
+        Pattern patternVariable = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*"); // Patrón para detectar nombres de variables
 
         for (String variable : variables) {
-            System.out.print("Ingrese el valor para la variable '" + variable + "': ");
-            double valor = scanner.nextDouble(); // Leer el valor ingresado
-            valoresVariables.put(variable, valor); // Guardar en el mapa
+            while (true) {
+                System.out.print("Ingrese el valor para la variable '" + variable + "': ");
+                String entrada = scanner.next();
+
+                // Validar si la entrada es un número válido
+                try {
+                    double valor = Double.parseDouble(entrada);
+                    valoresVariables.put(variable, valor); // Guardar el valor si es válido
+                    break; // Salir del ciclo si se ingresó un número válido
+                } catch (NumberFormatException e) {
+                    // Si no es un número, verificar si es un nombre de variable
+                    if (patternVariable.matcher(entrada).matches()) {
+                        System.out.println("Error: No se permite usar el nombre de otra variable como valor.");
+                    } else {
+                        System.out.println("Error: Entrada no válida. Solo se permiten números.");
+                    }
+                }
+            }
         }
 
         return valoresVariables;
