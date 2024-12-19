@@ -101,8 +101,8 @@ public class ExpresionesAritmeticasASM {
         // Verificar que el lado izquierdo del '=' sea una variable válida
         String[] partes = expresion.split("=", 2); // Divide la expresión en izquierda y derecha
         String ladoIzquierdo = partes[0];
-        if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-            return false; // El lado izquierdo debe ser un identificador válido (e.g., "x", "id_1")
+        if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) { // Permitir letras, números y guiones bajos
+            return false; // El lado izquierdo debe ser un identificador válido
         }
 
         // Verificar que no haya caracteres inválidos en la expresión
@@ -136,7 +136,7 @@ public class ExpresionesAritmeticasASM {
             return expresion.substring(0, indiceIgual);
         }
         return null; // Devuelve null si no se encuentra '='
-    }    
+    }
 
     // Identifica todas las variables en la expresión usando expresiones regulares
     private static Set<String> identificarVariables(String expresion) {
@@ -166,24 +166,16 @@ public class ExpresionesAritmeticasASM {
 
     // Procesa la expresión aritmética y genera temporales e instrucciones ASM
     private static String procesarExpresion(String expresion, List<String> temporales, List<String> instruccionesASM) {
-        Pattern parentesisPattern = Pattern.compile("\\(([^()]+)\\)");
-        Matcher matcher;
-
-        // Procesar paréntesis primero
-        while ((matcher = parentesisPattern.matcher(expresion)).find()) {
-            String subExpresion = matcher.group(1); // Subexpresión dentro de paréntesis
-            String temporal = procesarExpresion(subExpresion, temporales, instruccionesASM);
-            expresion = expresion.replaceFirst(Pattern.quote(matcher.group(0)), temporal); // Reemplazar con temporal
-        }
-
-        // Definir operadores y sus nombres equivalentes en ASM
+        // Modificar el patrón para soportar variables alfanuméricas con guiones bajos
         String[] operadores = { "\\*", "/", "\\+", "-", "=" };
         String[] nombresOperadores = { "MUL", "DIV", "ADD", "SUB", "MOV" };
 
-        // Procesar las operaciones aritméticas según la prioridad
         for (int i = 0; i < operadores.length; i++) {
-            Pattern operacionPattern = Pattern.compile("([a-zA-Z0-9.]+)" + operadores[i] + "([a-zA-Z0-9.]+)");
+            // Ajuste del patrón para admitir variables como x_1 o y_123
+            Pattern operacionPattern = Pattern
+                    .compile("([a-zA-Z_][a-zA-Z0-9_]*|\\d+)" + operadores[i] + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+)");
 
+            Matcher matcher;
             while ((matcher = operacionPattern.matcher(expresion)).find()) {
                 String operando1 = matcher.group(1); // Operando 1
                 String operando2 = matcher.group(2); // Operando 2
