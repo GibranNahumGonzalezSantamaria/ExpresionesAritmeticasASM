@@ -35,12 +35,12 @@ public class ExpresionesAritmeticasASM {
         List<String> temporales = new ArrayList<>();
         List<String> instruccionesASM = new ArrayList<>();
 
-        String resultado = procesarExpresion(input, temporales, instruccionesASM);
+        String Resultado = procesarExpresion(input, temporales, instruccionesASM);
 
         for (String temporal : temporales) {
             System.out.println(temporal);
         }
-        System.out.println("Resultado final: " + resultado);
+        System.out.println("Resultado final: " + Resultado);
 
         generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
 
@@ -173,7 +173,7 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    T" + i + " DW ?\n");
             }
 
-            writer.write("    result DB 'Resultado:   $'\n");
+            writer.write("    Resultado DB '" + variableIzquierda + " =   $'\n");
             writer.write("    value DB 5 DUP('$') ; Buffer para el valor de X en texto\n\n");
 
             writer.write(".CODE\n");
@@ -202,7 +202,7 @@ public class ExpresionesAritmeticasASM {
             writer.write("    JNZ next_digit\n\n");
 
             writer.write("    ; Mostrar resultado\n");
-            writer.write("    LEA DX, result\n");
+            writer.write("    LEA DX, Resultado\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n");
 
