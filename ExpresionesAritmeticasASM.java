@@ -46,7 +46,7 @@ public class ExpresionesAritmeticasASM {
 
         // Reemplazar las variables en la expresión con sus valores
         for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
-            input = input.replaceAll(Pattern.quote(entry.getKey()), entry.getKey());
+            input = input.replaceAll("\\b" + Pattern.quote(entry.getKey()) + "\\b", entry.getKey());
         }
 
         // Listas para almacenar temporales e instrucciones ASM
@@ -70,59 +70,63 @@ public class ExpresionesAritmeticasASM {
 
     // Valida la estructura general de la expresión ingresada
     private static boolean esExpresionValida(String expresion) {
-    // Verificar que no haya operadores consecutivos (e.g., ++, **, //, etc.)
-    Pattern operadoresConsecutivos = Pattern.compile("[+\\-*/=]{2,}");
-    Matcher matcherOperadores = operadoresConsecutivos.matcher(expresion);
-    if (matcherOperadores.find()) {
-        return false; // Expresión inválida si encuentra operadores consecutivos
-    }
+        // Verificar que no haya operadores consecutivos (e.g., ++, **, //, etc.)
+        Pattern operadoresConsecutivos = Pattern.compile("[+\\-*/=]{2,}");
+        Matcher matcherOperadores = operadoresConsecutivos.matcher(expresion);
+        if (matcherOperadores.find()) {
+            return false; // Expresión inválida si encuentra operadores consecutivos
+        }
 
-    // Validar que no haya paréntesis sin operador antes (e.g., "a(b)")
-    Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(=])\\(");
-    Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
-    if (matcherParenSinOperador.find()) {
-        return false; // Expresión inválida si hay un paréntesis sin operador antes
-    }
+        // Validar que no haya paréntesis sin operador antes (e.g., "a(b)")
+        Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(=])\\(");
+        Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
+        if (matcherParenSinOperador.find()) {
+            return false; // Expresión inválida si hay un paréntesis sin operador antes
+        }
 
-    // Verificar que no haya números seguidos de paréntesis sin operador (e.g., "5(3+2)")
-    Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
-    Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
-    if (matcherNumeroSinOperador.find()) {
-        return false; // Expresión inválida si un número es seguido directamente por '('
-    }
+        // Verificar que no haya números seguidos de paréntesis sin operador (e.g.,
+        // "5(3+2)")
+        Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
+        Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
+        if (matcherNumeroSinOperador.find()) {
+            return false; // Expresión inválida si un número es seguido directamente por '('
+        }
 
-    // Verificar que la expresión contenga exactamente un signo '='
-    long countIgual = expresion.chars().filter(ch -> ch == '=').count();
-    if (countIgual != 1) {
-        return false; // Expresión inválida si no hay o hay más de un '='
-    }
+        // Verificar que la expresión contenga exactamente un signo '='
+        long countIgual = expresion.chars().filter(ch -> ch == '=').count();
+        if (countIgual != 1) {
+            return false; // Expresión inválida si no hay o hay más de un '='
+        }
 
-    // Verificar que el lado izquierdo del '=' sea una variable válida
-    String[] partes = expresion.split("=", 2); // Divide la expresión en izquierda y derecha
-    String ladoIzquierdo = partes[0];
-    if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-        return false; // El lado izquierdo debe ser un identificador válido (e.g., "x", "id_1")
-    }
+        // Verificar que el lado izquierdo del '=' sea una variable válida
+        String[] partes = expresion.split("=", 2); // Divide la expresión en izquierda y derecha
+        String ladoIzquierdo = partes[0];
+        if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+            return false; // El lado izquierdo debe ser un identificador válido (e.g., "x", "id_1")
+        }
 
-    // Verificar que no haya caracteres inválidos en la expresión
-    Pattern caracteresInvalidos = Pattern.compile("[^a-zA-Z0-9_+\\-*/=().]");
-    Matcher matcherCaracteresInvalidos = caracteresInvalidos.matcher(expresion);
-    if (matcherCaracteresInvalidos.find()) {
-        return false; // Expresión inválida si contiene caracteres no permitidos
-    }
+        // Verificar que no haya caracteres inválidos en la expresión
+        Pattern caracteresInvalidos = Pattern.compile("[^a-zA-Z0-9_+\\-*/=().]");
+        Matcher matcherCaracteresInvalidos = caracteresInvalidos.matcher(expresion);
+        if (matcherCaracteresInvalidos.find()) {
+            return false; // Expresión inválida si contiene caracteres no permitidos
+        }
 
-    // Verificar que los paréntesis estén balanceados
-    int contadorParentesis = 0;
-    for (char c : expresion.toCharArray()) {
-        if (c == '(') contadorParentesis++;
-        if (c == ')') contadorParentesis--;
-        if (contadorParentesis < 0) return false; // Más ')' que '('
-    }
-    if (contadorParentesis != 0) {
-        return false; // Paréntesis desbalanceados
-    }
+        // Verificar que los paréntesis estén balanceados
+        int contadorParentesis = 0;
+        for (char c : expresion.toCharArray()) {
+            if (c == '(')
+                contadorParentesis++;
+            if (c == ')')
+                contadorParentesis--;
+            if (contadorParentesis < 0)
+                return false; // Más ')' que '('
+        }
+        if (contadorParentesis != 0) {
+            return false; // Paréntesis desbalanceados
+        }
 
-    return true; // La expresión es válida si pasa todas las verificaciones
+        return true; // La expresión es válida si pasa todas las verificaciones
     }
 
     // Identifica la variable en el lado izquierdo del '='
@@ -132,12 +136,12 @@ public class ExpresionesAritmeticasASM {
             return expresion.substring(0, indiceIgual);
         }
         return null; // Devuelve null si no se encuentra '='
-    }
+    }    
 
     // Identifica todas las variables en la expresión usando expresiones regulares
     private static Set<String> identificarVariables(String expresion) {
         Set<String> variables = new HashSet<>();
-        Pattern variablePattern = Pattern.compile("[a-zA-Z]+");
+        Pattern variablePattern = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*"); // Ajuste para incluir '_' en las variables
         Matcher matcher = variablePattern.matcher(expresion);
 
         while (matcher.find()) {
