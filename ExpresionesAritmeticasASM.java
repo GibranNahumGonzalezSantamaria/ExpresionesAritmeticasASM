@@ -226,8 +226,7 @@ public class ExpresionesAritmeticasASM {
     }
 
     // Genera el archivo ASM final
-    private static void generarArchivoASM(List<String> instruccionesASM, Map<String, Double> valoresVariables,
-                                          String variableIzquierda) {
+    private static void generarArchivoASM(List<String> instruccionesASM, Map<String, Double> valoresVariables, String variableIzquierda) {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
             writer.write(".MODEL SMALL\n");
             writer.write(".STACK 100h\n\n");
