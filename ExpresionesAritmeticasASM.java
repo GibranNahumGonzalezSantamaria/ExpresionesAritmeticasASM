@@ -79,9 +79,20 @@ public class ExpresionesAritmeticasASM {
             return false;
         }
     
-        return true;
-    }
+        // Validar que la expresión contenga un signo igual
+        if (!expresion.contains("=")) {
+            return false;
+        }
     
+        // Validar que no haya números enteros o decimales del lado izquierdo de la expresión
+        Pattern izquierdaIncorrecta = Pattern.compile("(^|[^=])\\d+(\\.?\\d+)?");
+        Matcher matcherIzquierdaIncorrecta = izquierdaIncorrecta.matcher(expresion.split("=")[0]);
+        if (matcherIzquierdaIncorrecta.find()) {
+            return false;
+        }
+    
+        return true;
+    }        
 
     private static String identificarVariableIzquierda(String expresion) {
         int indiceIgual = expresion.indexOf('=');
