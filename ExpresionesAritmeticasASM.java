@@ -166,7 +166,8 @@ public class ExpresionesAritmeticasASM {
         switch (operador) {
             case "MUL" -> {
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
-                instruccion.append(String.format("    MUL %s", operando2)).append("\n"); // Resultado en AX
+                instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n"); // Resultado en AX
+                instruccion.append("    MUL BX\n"); // Resultado en BX
                 instruccion.append(String.format("    MOV %s, AX", temporal)); // Guardar en temporal
             }
 
