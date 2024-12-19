@@ -13,13 +13,23 @@ public class ExpresionesAritmeticasASM {
         Scanner scanner = new Scanner(System.in);
 
         try {
-            System.out.println("Ingrese la expresión aritmética: ");
-            input = scanner.nextLine();
+            while (true) {
+                System.out.println("Ingrese la expresión aritmética: ");
+                input = scanner.nextLine();
+
+                // Eliminar espacios en blanco
+                input = input.replaceAll("\\s+", "");
+
+                // Validar expresión
+                if (esExpresionValida(input)) {
+                    break; // Salir del ciclo si la expresión es válida
+                } else {
+                    System.out.println("Expresión inválida. Intente de nuevo.");
+                }
+            }
         } finally {
             // Scanner no se cierra aquí porque se usará más adelante
         }
-
-        input = input.replaceAll("\\s+", "");
 
         String variableIzquierda = identificarVariableIzquierda(input);
         Set<String> variables = identificarVariables(input);
@@ -35,17 +45,43 @@ public class ExpresionesAritmeticasASM {
         List<String> temporales = new ArrayList<>();
         List<String> instruccionesASM = new ArrayList<>();
 
-        String resultado = procesarExpresion(input, temporales, instruccionesASM);
+        String Resultado = procesarExpresion(input, temporales, instruccionesASM);
 
         for (String temporal : temporales) {
             System.out.println(temporal);
         }
-        System.out.println("Resultado final: " + resultado);
+        System.out.println("Resultado final: " + Resultado);
 
         generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
 
         scanner.close();
     }
+
+    private static boolean esExpresionValida(String expresion) {
+        // Validar que no haya operadores consecutivos
+        Pattern operadoresConsecutivos = Pattern.compile("[+\\-*/]{2,}");
+        Matcher matcherOperadores = operadoresConsecutivos.matcher(expresion);
+        if (matcherOperadores.find()) {
+            return false;
+        }
+    
+        // Validar que haya un operador antes de cualquier paréntesis
+        Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(])\\(");
+        Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
+        if (matcherParenSinOperador.find()) {
+            return false;
+        }
+    
+        // Validar que no haya números seguidos de paréntesis sin operador
+        Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
+        Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
+        if (matcherNumeroSinOperador.find()) {
+            return false;
+        }
+    
+        return true;
+    }
+    
 
     private static String identificarVariableIzquierda(String expresion) {
         int indiceIgual = expresion.indexOf('=');
@@ -173,7 +209,7 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    T" + i + " DW ?\n");
             }
 
-            writer.write("    result DB 'Resultado:   $'\n");
+            writer.write("    Resultado DB '" + variableIzquierda + " =   $'\n");
             writer.write("    value DB 5 DUP('$') ; Buffer para el valor de X en texto\n\n");
 
             writer.write(".CODE\n");
@@ -202,7 +238,7 @@ public class ExpresionesAritmeticasASM {
             writer.write("    JNZ next_digit\n\n");
 
             writer.write("    ; Mostrar resultado\n");
-            writer.write("    LEA DX, result\n");
+            writer.write("    LEA DX, Resultado\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n");
 
