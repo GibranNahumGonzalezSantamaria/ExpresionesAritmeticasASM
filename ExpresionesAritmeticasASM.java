@@ -70,40 +70,59 @@ public class ExpresionesAritmeticasASM {
 
     // Valida la estructura general de la expresión ingresada
     private static boolean esExpresionValida(String expresion) {
-        // Verificar que no haya operadores consecutivos
-        Pattern operadoresConsecutivos = Pattern.compile("[+\\-*/=]{2,}");
-        Matcher matcherOperadores = operadoresConsecutivos.matcher(expresion);
-        if (matcherOperadores.find()) {
-            return false;
-        }
+    // Verificar que no haya operadores consecutivos (e.g., ++, **, //, etc.)
+    Pattern operadoresConsecutivos = Pattern.compile("[+\\-*/=]{2,}");
+    Matcher matcherOperadores = operadoresConsecutivos.matcher(expresion);
+    if (matcherOperadores.find()) {
+        return false; // Expresión inválida si encuentra operadores consecutivos
+    }
 
-        // Validar que no haya paréntesis sin operador antes
-        Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(])\\(");
-        Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
-        if (matcherParenSinOperador.find()) {
-            return false;
-        }
+    // Validar que no haya paréntesis sin operador antes (e.g., "a(b)")
+    Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(=])\\(");
+    Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
+    if (matcherParenSinOperador.find()) {
+        return false; // Expresión inválida si hay un paréntesis sin operador antes
+    }
 
-        // Verificar que no haya números seguidos de paréntesis sin operador
-        Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
-        Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
-        if (matcherNumeroSinOperador.find()) {
-            return false;
-        }
+    // Verificar que no haya números seguidos de paréntesis sin operador (e.g., "5(3+2)")
+    Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
+    Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
+    if (matcherNumeroSinOperador.find()) {
+        return false; // Expresión inválida si un número es seguido directamente por '('
+    }
 
-        // Verificar que la expresión contenga un signo '='
-        if (!expresion.contains("=")) {
-            return false;
-        }
+    // Verificar que la expresión contenga exactamente un signo '='
+    long countIgual = expresion.chars().filter(ch -> ch == '=').count();
+    if (countIgual != 1) {
+        return false; // Expresión inválida si no hay o hay más de un '='
+    }
 
-        // Verificar que no haya números en el lado izquierdo de '='
-        Pattern izquierdaIncorrecta = Pattern.compile("(^|[^=])\\d+(\\.?\\d+)?");
-        Matcher matcherIzquierdaIncorrecta = izquierdaIncorrecta.matcher(expresion.split("=")[0]);
-        if (matcherIzquierdaIncorrecta.find()) {
-            return false;
-        }
+    // Verificar que el lado izquierdo del '=' sea una variable válida
+    String[] partes = expresion.split("=", 2); // Divide la expresión en izquierda y derecha
+    String ladoIzquierdo = partes[0];
+    if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+        return false; // El lado izquierdo debe ser un identificador válido (e.g., "x", "id_1")
+    }
 
-        return true; // La expresión es válida
+    // Verificar que no haya caracteres inválidos en la expresión
+    Pattern caracteresInvalidos = Pattern.compile("[^a-zA-Z0-9_+\\-*/=().]");
+    Matcher matcherCaracteresInvalidos = caracteresInvalidos.matcher(expresion);
+    if (matcherCaracteresInvalidos.find()) {
+        return false; // Expresión inválida si contiene caracteres no permitidos
+    }
+
+    // Verificar que los paréntesis estén balanceados
+    int contadorParentesis = 0;
+    for (char c : expresion.toCharArray()) {
+        if (c == '(') contadorParentesis++;
+        if (c == ')') contadorParentesis--;
+        if (contadorParentesis < 0) return false; // Más ')' que '('
+    }
+    if (contadorParentesis != 0) {
+        return false; // Paréntesis desbalanceados
+    }
+
+    return true; // La expresión es válida si pasa todas las verificaciones
     }
 
     // Identifica la variable en el lado izquierdo del '='
