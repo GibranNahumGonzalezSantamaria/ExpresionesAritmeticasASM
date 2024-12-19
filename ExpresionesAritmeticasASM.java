@@ -7,7 +7,6 @@ public class ExpresionesAritmeticasASM {
 
     private static int temporalCounter = 1;
 
-    @SuppressWarnings("ConvertToTryWithResources")
     public static void main(String[] args) {
         String input;
         Scanner scanner = new Scanner(System.in);
@@ -117,37 +116,38 @@ public class ExpresionesAritmeticasASM {
         StringBuilder instruccion = new StringBuilder();
 
         switch (operador) {
-            case "MUL" -> {
+            case "MUL":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("MUL %s", operando2)).append("\n"); // Resultado en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-            }
+                break;
 
-            case "DIV" -> {
+            case "DIV":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append("XOR DX, DX").append("\n"); // Limpiar DX para la división
                 instruccion.append(String.format("DIV %s", operando2)).append("\n"); // Cociente en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-            }
+                break;
 
-            case "ADD" -> {
+            case "ADD":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("ADD AX, %s", operando2)).append("\n"); // Suma en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-            }
+                break;
 
-            case "SUB" -> {
+            case "SUB":
                 instruccion.append(String.format("MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("SUB AX, %s", operando2)).append("\n"); // Resta en AX
                 instruccion.append(String.format("MOV %s, AX", temporal)); // Guardar en temporal
-            }
+                break;
 
-            case "MOV" -> {
+            case "MOV":
                 instruccion.append(String.format("MOV AX, %s", operando2)).append("\n"); // Cargar valor en AX
                 instruccion.append(String.format("MOV %s, AX", operando1)); // Mover a destino
-            }
+                break;
 
-            default -> throw new IllegalArgumentException("Operador no soportado: " + operador);
+            default:
+                throw new IllegalArgumentException("Operador no soportado: " + operador);
         }
 
         return instruccion.toString();
@@ -185,30 +185,20 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    " + instruccion + "\n");
             }
 
-            // Manejar la conversión a texto para números negativos
             writer.write("    ; Convertir " + variableIzquierda + " a texto\n");
             writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, value\n");
             writer.write("    MOV BX, 10\n");
-            writer.write("    TEST AX, AX\n");
-            writer.write("    JNS no_negativo\n");
-            writer.write("    MOV byte ptr [DI], '-'   ; Coloca el signo negativo en el buffer\n");
-            writer.write("    INC DI\n");
-            writer.write("    NEG AX\n");
-            writer.write("no_negativo:\n");
             writer.write("next_digit:\n");
             writer.write("    XOR DX, DX\n");
             writer.write("    DIV BX\n");
             writer.write("    ADD DL, '0'\n");
+            writer.write("    DEC DI\n");
             writer.write("    MOV [DI], DL\n");
-            writer.write("    INC DI\n");
             writer.write("    DEC CX\n");
             writer.write("    TEST AX, AX\n");
             writer.write("    JNZ next_digit\n");
-
-            writer.write("    ; Null-terminate the string\n");
-            writer.write("    MOV byte ptr [DI], '$'\n");
 
             writer.write("    ; Mostrar resultado\n");
             writer.write("    LEA DX, result\n");
