@@ -329,11 +329,11 @@ public class ExpresionesAritmeticasASM {
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
                 writer.write("    " + entry.getKey() + " DW " + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
-
+/*
             if (variableIzquierda != null) {
                 writer.write("    " + variableIzquierda + " DW ?\n");
             }
-/* 
+ 
             for (int i = 1; i < temporalCounter; i++) {
                 writer.write("    T" + i + " DW ?\n");
             }
