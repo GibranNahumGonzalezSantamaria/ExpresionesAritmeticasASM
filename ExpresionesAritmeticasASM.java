@@ -1,7 +1,12 @@
+import java.io.File;
 import java.io.FileWriter; // Importación para escribir en un archivo
 import java.io.IOException; // Importación para manejar excepciones de entrada/salida
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*; // Importación para trabajar con colecciones y utilidades
 import java.util.regex.*; // Importación para trabajar con expresiones regulares
+
+import javax.swing.JFileChooser;
 
 public class ExpresionesAritmeticasASM {
 
@@ -11,25 +16,40 @@ public class ExpresionesAritmeticasASM {
     @SuppressWarnings("ConvertToTryWithResources") // Supresión de advertencia específica
     public static void main(String[] args) {
         String input; // Almacena la expresión ingresada por el usuario
-        Scanner scanner = new Scanner(System.in); // Para leer la entrada del usuario
 
-        try {
-            while (true) {
-                System.out.println("Ingrese la expresión aritmética: ");
-                input = scanner.nextLine();
+        // Bloque para seleccionar el archivo y procesar su contenido
+        String expresionAritmetica = "";
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Seleccione un archivo .txt");
 
-                // Eliminar espacios en blanco de la entrada
-                input = input.replaceAll("\\s+", "");
-
-                // Validar si la expresión es válida
-                if (esExpresionValida(input)) {
-                    break; // Salir del ciclo si la expresión es válida
-                } else {
-                    System.out.println("Expresión inválida. Intente de nuevo.");
+        int result = fileChooser.showOpenDialog(null);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            if (selectedFile.getName().endsWith(".txt")) {
+                try {
+                    String contenido = new String(Files.readAllBytes(Paths.get(selectedFile.getAbsolutePath())));
+                    expresionAritmetica = contenido.replaceAll("\\s+", "");
+                } catch (IOException e) {
+                    System.err.println("Error al leer el archivo: " + e.getMessage());
+                    return; // Salir del programa si hay un error al leer el archivo
                 }
+            } else {
+                System.err.println("Por favor, seleccione un archivo con extensión .txt");
+                return; // Salir del programa si el archivo no es .txt
             }
-        } finally {
-            // El scanner no se cierra aún porque será utilizado posteriormente
+        } else {
+            System.out.println("No se seleccionó ningún archivo.");
+            return; // Salir del programa si no se seleccionó un archivo
+        }
+
+        // Asignar el contenido del archivo a la variable input
+        input = expresionAritmetica;
+        System.out.println("\nExpresión Aritmética: " + expresionAritmetica + "\n");
+
+        // Validar si la expresión es válida
+        if (!esExpresionValida(input)) {
+            System.out.println("Expresión inválida en el archivo. Verifique el contenido.");
+            return; // Salir si la expresión no es válida
         }
 
         // Identificar la variable en el lado izquierdo del '='
@@ -42,6 +62,7 @@ public class ExpresionesAritmeticasASM {
         variables.remove(variableIzquierda);
 
         // Obtener valores de las variables desde la entrada del usuario
+        Scanner scanner = new Scanner(System.in); // Scanner para entrada de valores de variables
         Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
 
         // Reemplazar las variables en la expresión con sus valores
@@ -150,15 +171,16 @@ public class ExpresionesAritmeticasASM {
 
         return variables;
     }
-    
+
     // Solicita valores de las variables al usuario
     private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Scanner scanner) {
         Map<String, Double> valoresVariables = new HashMap<>();
-        Pattern patternVariable = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*"); // Patrón para detectar nombres de variables
+        Pattern patternVariable = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*"); // Patrón para detectar nombres de
+                                                                             // variables
 
         for (String variable : variables) {
             while (true) {
-                System.out.print("Ingrese el valor para la variable '" + variable + "': ");
+                System.out.print(" * Ingrese el valor para la variable '" + variable + "': ");
                 String entrada = scanner.next();
 
                 // Validar si la entrada es un número válido
@@ -198,7 +220,7 @@ public class ExpresionesAritmeticasASM {
                 String temporal = "T" + temporalCounter++; // Generar temporal
 
                 // Crear una operación para la lista de temporales
-                String operacion = String.format("%s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
+                String operacion = String.format("    %s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
                 temporales.add(operacion);
 
                 // Generar instrucción ASM para la operación
