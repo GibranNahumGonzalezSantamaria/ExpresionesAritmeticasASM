@@ -204,17 +204,25 @@ public class ExpresionesAritmeticasASM {
     // Procesa la expresión aritmética y genera temporales e instrucciones ASM
     private static String procesarExpresion(String expresion, List<String> temporales, List<String> instruccionesASM) {
         // Modificar el patrón para soportar variables alfanuméricas con guiones bajos
-        String[] operadores = { "\\*", "/", "\\+", "-", "=" };
-        String[] nombresOperadores = { "MUL", "DIV", "ADD", "SUB", "MOV" };
+        String[] operadoresJerarquia = { "\\(", "\\*", "/", "\\+", "-", "=" };
+        String[] nombresOperadores = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
 
-        for (int i = 0; i < operadores.length; i++) {
-            // Ajuste del patrón para admitir variables como x_1 o y_123
-            Pattern operacionPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*|\\d+)" + operadores[i] + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+)");
+        // Procesar los paréntesis primero
+        Pattern parentesisPattern = Pattern.compile("\\(([^()]+)\\)"); // Encuentra contenido dentro de paréntesis
+        Matcher matcherParentesis;
+        while ((matcherParentesis = parentesisPattern.matcher(expresion)).find()) {
+            String subExpresion = matcherParentesis.group(1); // Obtener la subexpresión dentro de los paréntesis
+            String temporal = procesarExpresion(subExpresion, temporales, instruccionesASM); // Procesar recursivamente
+            expresion = expresion.replaceFirst(Pattern.quote("(" + subExpresion + ")"), temporal); // Reemplazar en la expresión original
+        }
 
+        // Procesar los operadores en orden jerárquico
+        for (int i = 1; i < operadoresJerarquia.length; i++) { // Empezar desde '*' ya que 'PAREN' ya se procesó
+            Pattern operacionPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)" + operadoresJerarquia[i] + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)");
             Matcher matcher;
             while ((matcher = operacionPattern.matcher(expresion)).find()) {
                 String operando1 = matcher.group(1); // Operando 1
-                String operando2 = matcher.group(2); // Operando 2
+                String operando2 = matcher.group(3); // Operando 2
                 String temporal = "T" + temporalCounter++; // Generar temporal
 
                 // Crear una operación para la lista de temporales
