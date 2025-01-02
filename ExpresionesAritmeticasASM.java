@@ -74,14 +74,17 @@ public class ExpresionesAritmeticasASM {
         List<String> instruccionesASM = new ArrayList<>();
 
         // Procesar la expresión y generar el resultado final
-        String Resultado = procesarExpresion(input, temporales, instruccionesASM);
+        procesarExpresion(input, temporales, instruccionesASM, valoresVariables);
 
         System.out.print("\n");
         // Mostrar temporales generados
         for (String temporal : temporales) {
             System.out.println(temporal);
         }
-        System.out.println("\n - Resultado final: " + Resultado + "\n");
+
+        // Obtener el resultado numérico final desde los valores de las variables
+        double resultadoNumerico = valoresVariables.get(variableIzquierda);
+        System.out.println("\n - Resultado numérico calculado: " + String.format("%.3f", resultadoNumerico) + "\n");
 
         // Generar el archivo ASM basado en las instrucciones
         generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
@@ -105,8 +108,7 @@ public class ExpresionesAritmeticasASM {
             return false; // Expresión inválida si hay un paréntesis sin operador antes
         }
 
-        // Verificar que no haya números seguidos de paréntesis sin operador (e.g.,
-        // "5(3+2)")
+        // Verificar que no haya números seguidos de paréntesis sin operador (e.g., "5(3+2)")
         Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
         Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
         if (matcherNumeroSinOperador.find()) {
@@ -175,8 +177,7 @@ public class ExpresionesAritmeticasASM {
     // Solicita valores de las variables al usuario
     private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Scanner scanner) {
         Map<String, Double> valoresVariables = new HashMap<>();
-        Pattern patternVariable = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*"); // Patrón para detectar nombres de
-                                                                             // variables
+        Pattern patternVariable = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*"); // Patrón para detectar nombres de variables
 
         for (String variable : variables) {
             while (true) {
@@ -203,8 +204,7 @@ public class ExpresionesAritmeticasASM {
     }
 
     // Procesa la expresión aritmética y genera temporales e instrucciones ASM
-    private static String procesarExpresion(String expresion, List<String> temporales, List<String> instruccionesASM) {
-        // Modificar el patrón para soportar variables alfanuméricas con guiones bajos
+    private static String procesarExpresion(String expresion, List<String> temporales, List<String> instruccionesASM, Map<String, Double> valoresVariables) {
         String[] operadoresJerarquia = { "\\(", "\\*", "/", "\\+", "-", "=" };
         String[] nombresOperadores = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
 
@@ -213,18 +213,39 @@ public class ExpresionesAritmeticasASM {
         Matcher matcherParentesis;
         while ((matcherParentesis = parentesisPattern.matcher(expresion)).find()) {
             String subExpresion = matcherParentesis.group(1); // Obtener la subexpresión dentro de los paréntesis
-            String temporal = procesarExpresion(subExpresion, temporales, instruccionesASM); // Procesar recursivamente
+            String temporal = procesarExpresion(subExpresion, temporales, instruccionesASM, valoresVariables); // Procesar recursivamente
             expresion = expresion.replaceFirst(Pattern.quote("(" + subExpresion + ")"), temporal); // Reemplazar en la expresión original
         }
 
         // Procesar los operadores en orden jerárquico
-        for (int i = 1; i < operadoresJerarquia.length; i++) { // Empezar desde '*' ya que 'PAREN' ya se procesó
+        for (int i = 1; i < operadoresJerarquia.length; i++) {
             Pattern operacionPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)" + operadoresJerarquia[i] + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)");
             Matcher matcher;
             while ((matcher = operacionPattern.matcher(expresion)).find()) {
                 String operando1 = matcher.group(1); // Operando 1
                 String operando2 = matcher.group(3); // Operando 2
                 String temporal = "T" + temporalCounter++; // Generar temporal
+
+                // Manejo específico para la operación de asignación (`=`):
+                if (nombresOperadores[i].equals("MOV")) {
+                    // En el caso de `=`, simplemente asignamos el valor de `operando2` a `operando1`
+                    double valor2 = valoresVariables.containsKey(operando2) ? valoresVariables.get(operando2) : Double.parseDouble(operando2);
+                    valoresVariables.put(operando1, valor2);
+
+                    // Generar instrucción ASM para la operación MOV
+                    String instruccionASM = generarInstruccionASM(nombresOperadores[i], operando1, operando2, temporal);
+                    instruccionesASM.add(instruccionASM);
+
+                    return operando1; // Devolver la variable izquierda
+                }
+
+                // Calcular el resultado de la operación actual
+                double valor1 = valoresVariables.containsKey(operando1) ? valoresVariables.get(operando1) : Double.parseDouble(operando1);
+                double valor2 = valoresVariables.containsKey(operando2) ? valoresVariables.get(operando2) : Double.parseDouble(operando2);
+                double resultado = calcularResultado(valor1, valor2, nombresOperadores[i]); // Realiza el cálculo
+
+                // Actualizar valores de variables temporales
+                valoresVariables.put(temporal, resultado);
 
                 // Crear una operación para la lista de temporales
                 String operacion = String.format("    %s -> %s, %s, %s", temporal, operando1, operando2, nombresOperadores[i]);
@@ -240,6 +261,17 @@ public class ExpresionesAritmeticasASM {
         }
 
         return expresion; // Devolver la expresión resultante
+    }
+
+    // Método auxiliar para calcular el resultado de las operaciones en tiempo real
+    private static double calcularResultado(double operando1, double operando2, String operador) {
+        return switch (operador) {
+            case "MUL" -> operando1 * operando2;
+            case "DIV" -> operando1 / operando2;
+            case "ADD" -> operando1 + operando2;
+            case "SUB" -> operando1 - operando2;
+            default -> throw new IllegalArgumentException("Operador no soportado: " + operador);
+        };
     }
 
     // Genera una instrucción ASM específica según el operador
@@ -286,7 +318,8 @@ public class ExpresionesAritmeticasASM {
     }
 
     // Genera el archivo ASM final
-    private static void generarArchivoASM(List<String> instruccionesASM, Map<String, Double> valoresVariables, String variableIzquierda) {
+    private static void generarArchivoASM(List<String> instruccionesASM, Map<String, Double> valoresVariables,
+            String variableIzquierda) {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
             writer.write(".MODEL SMALL\n");
             writer.write(".STACK 100h\n\n");
@@ -368,6 +401,7 @@ public class ExpresionesAritmeticasASM {
         String parteDecimalFormateada = String.format("%03d", parteDecimal);
 
         // Retorna el formato ASM deseado
-        return String.format("%s\n    %s_D DW %s ;Decimales de " + variable, parteEnteraFormateada, variable, parteDecimalFormateada);
+        return String.format("%s\n    %s_D DW %s ;Decimales de " + variable, parteEnteraFormateada, variable,
+                parteDecimalFormateada);
     }
 }
