@@ -95,8 +95,7 @@ public class ExpresionesAritmeticasASM {
         // Obtener valores para cada variable a través de consola
         Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
 
-        // Reemplazar, en 'input', cada variable por su propio nombre (para evitar
-        // conflictos)
+        // Reemplazar, en 'input', cada variable por su propio nombre (para evitar conflictos)
         for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
             input = input.replaceAll("\\b" + Pattern.quote(entry.getKey()) + "\\b", entry.getKey());
         }
@@ -119,11 +118,26 @@ public class ExpresionesAritmeticasASM {
 
         // Obtener el resultado numérico calculado desde el mapa de variables
         double resultadoNumerico = valoresVariables.get(variableIzquierda);
-        // Mostrar resultado con formato de 3 decimales (solo para debug/visualización)
-        System.out.println("\n - Resultado numérico calculado: " + String.format("%.3f", resultadoNumerico) + "\n");
 
-        // Generar archivo ASM final con las instrucciones
-        generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
+        // Mostrar resultado con formato de 3 decimales (solo para debug/visualización)
+        System.out.println("\n - Resultado numérico calculado: "
+                           + String.format("%.3f", resultadoNumerico) + "\n");
+
+        /*
+         * =========================================
+         * Creamos la variable "resultadoFinalJava"
+         * (con signo '-' si es negativo).
+         * =========================================
+         */
+        String resultadoFinalJava;
+        if (resultadoNumerico < 0) {
+            resultadoFinalJava = "-" + String.format("%.3f", Math.abs(resultadoNumerico));
+        } else {
+            resultadoFinalJava = String.format("%.3f", resultadoNumerico);
+        }
+
+        // Generar el archivo ASM con las instrucciones y la lógica deseada
+        generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava);
 
         // Cerrar el Scanner
         scanner.close();
@@ -187,62 +201,46 @@ public class ExpresionesAritmeticasASM {
             return false; // Falla si no hay balance total
         }
 
-        // Si llega aquí, la expresión es válida
         return true;
     }
 
     // Identificar variable en lado izquierdo del '='
     private static String identificarVariableIzquierda(String expresion) {
-        // Obtener posición de '='
         int indiceIgual = expresion.indexOf('=');
         if (indiceIgual != -1) {
-            // Extraer cadena hasta la posición de '='
             return expresion.substring(0, indiceIgual);
         }
-        return null; // Retornar null si no se encuentra '='
+        return null;
     }
 
     // Identificar todas las variables en la expresión
     private static Set<String> identificarVariables(String expresion) {
-        // Crear conjunto para almacenar variables
         Set<String> variables = new HashSet<>();
-        // Expresión regular para detectar variables (inicia con letra o '_')
         Pattern variablePattern = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
         Matcher matcher = variablePattern.matcher(expresion);
 
-        // Mientras haya coincidencias en la expresión
         while (matcher.find()) {
-            // Agregar cada variable al conjunto
             variables.add(matcher.group());
         }
 
-        return variables; // Retornar conjunto de variables
+        return variables;
     }
 
     // Solicitar valores de las variables al usuario
     private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Scanner scanner) {
-        // Crear mapa para almacenar nombre de variable y su valor
         Map<String, Double> valoresVariables = new HashMap<>();
-
-        // Expresión regular para validar nombres de variable
         Pattern patternVariable = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
-        // Recorrer cada variable en el conjunto
         for (String variable : variables) {
-            // Ciclo para pedir valor hasta que sea válido
             while (true) {
-                // Pedir valor al usuario
                 System.out.print(" * Ingrese el valor para la variable '" + variable + "': ");
                 String entrada = scanner.next();
 
-                // Intentar convertir a número
                 try {
                     double valor = Double.parseDouble(entrada);
-                    // Almacenar en el mapa si se convierte correctamente
                     valoresVariables.put(variable, valor);
-                    break; // Salir del ciclo si el valor es válido
+                    break;
                 } catch (NumberFormatException e) {
-                    // Si no es número, verificar si es un nombre de variable
                     if (patternVariable.matcher(entrada).matches()) {
                         System.out.println("Error: No se permite usar el nombre de otra variable como valor.");
                     } else {
@@ -252,70 +250,55 @@ public class ExpresionesAritmeticasASM {
             }
         }
 
-        // Retornar mapa con valores ingresados
         return valoresVariables;
     }
 
     // Procesar la expresión aritmética y generar temporales e instrucciones ASM
-    private static String procesarExpresion(String expresion, List<String> temporales, List<String> instruccionesASM,
-            Map<String, Double> valoresVariables) {
-        // Definir jerarquía de operadores (orden de precedencia)
+    private static String procesarExpresion(
+        String expresion,
+        List<String> temporales,
+        List<String> instruccionesASM,
+        Map<String, Double> valoresVariables
+    ) {
         String[] operadoresJerarquia = { "\\(", "\\*", "/", "\\+", "-", "=" };
-        // Definir nombres de operadores (etiquetas para el switch interno)
         String[] nombresOperadores = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
 
-        // Procesar primero los paréntesis con expresión regular para encontrar su
-        // contenido
+        // Procesar primero paréntesis de manera recursiva
         Pattern parentesisPattern = Pattern.compile("\\(([^()]+)\\)");
         Matcher matcherParentesis;
-        // Mientras encuentre subexpresiones entre paréntesis
         while ((matcherParentesis = parentesisPattern.matcher(expresion)).find()) {
-            // Obtener la subexpresión interna
             String subExpresion = matcherParentesis.group(1);
-            // Procesar subexpresión de forma recursiva
             String temporal = procesarExpresion(subExpresion, temporales, instruccionesASM, valoresVariables);
-            // Reemplazar la subexpresión original con el resultado temporal
             expresion = expresion.replaceFirst(Pattern.quote("(" + subExpresion + ")"), temporal);
         }
 
-        // Recorrer la lista de operadores en orden de precedencia (excepto 'PAREN' que
-        // ya se procesó)
+        // Recorrer operadores en orden de precedencia (ya no PAREN)
         for (int i = 1; i < operadoresJerarquia.length; i++) {
-            // Crear patrón para buscar estructura: (operando1) (operador) (operando2)
             Pattern operacionPattern = Pattern.compile(
-                    "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)"
-                            + operadoresJerarquia[i]
-                            + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)");
+                "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)"
+                + operadoresJerarquia[i] +
+                "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)"
+            );
 
             Matcher matcher;
-            // Mientras se cumpla la expresión (operando1 operador operando2)
             while ((matcher = operacionPattern.matcher(expresion)).find()) {
-                // Capturar operando 1
                 String operando1 = matcher.group(1);
-                // Capturar operando 2
                 String operando2 = matcher.group(3);
-                // Crear nombre de variable temporal
                 String temporal = "T" + temporalCounter++;
 
-                // Manejar operación de asignación (MOV)
+                // MOV
                 if (nombresOperadores[i].equals("MOV")) {
-                    // Obtener valor de operando2 (variable o número)
                     double valor2 = valoresVariables.containsKey(operando2)
                             ? valoresVariables.get(operando2)
                             : Double.parseDouble(operando2);
-
-                    // Asignar valor2 a la variable operando1
                     valoresVariables.put(operando1, valor2);
 
-                    // Generar instrucción MOV en ASM
                     String instruccionASM = generarInstruccionASM(nombresOperadores[i], operando1, operando2, temporal);
                     instruccionesASM.add(instruccionASM);
-
-                    // Devolver la variable del lado izquierdo como resultado final
                     return operando1;
                 }
 
-                // Si no es operación MOV, realizar el cálculo aritmético
+                // Otras operaciones aritméticas
                 double valor1 = valoresVariables.containsKey(operando1)
                         ? valoresVariables.get(operando1)
                         : Double.parseDouble(operando1);
@@ -323,151 +306,146 @@ public class ExpresionesAritmeticasASM {
                         ? valoresVariables.get(operando2)
                         : Double.parseDouble(operando2);
 
-                // Calcular resultado en tiempo real
                 double resultado = calcularResultado(valor1, valor2, nombresOperadores[i]);
-
-                // Almacenar el valor resultante en el mapa con clave = 'temporal'
                 valoresVariables.put(temporal, resultado);
 
-                // Crear descripción de la operación para la lista de temporales
-                String operacion = String.format("    %s -> %s, %s, %s", temporal, operando1, operando2,
-                        nombresOperadores[i]);
+                String operacion = String.format("    %s -> %s, %s, %s", 
+                                                 temporal, operando1, operando2, nombresOperadores[i]);
                 temporales.add(operacion);
 
-                // Generar instrucción ASM para la operación
                 String instruccionASM = generarInstruccionASM(nombresOperadores[i], operando1, operando2, temporal);
                 instruccionesASM.add(instruccionASM);
 
-                // Reemplazar la subexpresión completa con el nuevo temporal
                 expresion = expresion.replaceFirst(Pattern.quote(matcher.group(0)), temporal);
             }
         }
 
-        // Retornar la expresión final, que podría ser un único temporal
         return expresion;
     }
 
-    // Método auxiliar para calcular operaciones en tiempo real
+    // Calcular operaciones en tiempo real
     private static double calcularResultado(double operando1, double operando2, String operador) {
-        // Utilizar 'switch' mejorado (java 14+) para determinar la operación
         return switch (operador) {
-            case "MUL" -> operando1 * operando2; // Multiplicación
-            case "DIV" -> operando1 / operando2; // División
-            case "ADD" -> operando1 + operando2; // Suma
-            case "SUB" -> operando1 - operando2; // Resta
+            case "MUL" -> operando1 * operando2;
+            case "DIV" -> operando1 / operando2;
+            case "ADD" -> operando1 + operando2;
+            case "SUB" -> operando1 - operando2;
             default -> throw new IllegalArgumentException("Operador no soportado: " + operador);
         };
     }
 
     // Generar instrucción ASM con base en operador y operandos
     private static String generarInstruccionASM(String operador, String operando1, String operando2, String temporal) {
-        // Crear objeto StringBuilder para armar la instrucción
         StringBuilder instruccion = new StringBuilder();
 
         switch (operador) {
             case "MUL" -> {
-                // Cargar operando1 en AX y operando2 en BX
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n");
-                // Preparar registro para multiplicación
                 instruccion.append("    CWD\n");
-                // Instrucción de multiplicación (con signo)
                 instruccion.append("    IMUL BX\n");
-                // Almacenar el resultado en variable temporal
                 instruccion.append(String.format("    MOV %s, AX", temporal));
             }
-
             case "DIV" -> {
-                // Cargar operando1 en AX
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
-                // Limpiar DX para división
                 instruccion.append("    XOR DX, DX\n");
-                // Cargar operando2 en BX
                 instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n");
-                // Preparar registro para división
                 instruccion.append("    CWD\n");
-                // Instrucción de división con signo
                 instruccion.append("    IDIV BX\n");
-                // Almacenar el resultado en variable temporal
                 instruccion.append(String.format("    MOV %s, AX", temporal));
             }
-
             case "ADD" -> {
-                // Cargar operando1 en AX
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
-                // Realizar suma con operando2
                 instruccion.append(String.format("    ADD AX, %s", operando2)).append("\n");
-                // Guardar resultado en variable temporal
                 instruccion.append(String.format("    MOV %s, AX", temporal));
             }
-
             case "SUB" -> {
-                // Cargar operando1 en AX
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
-                // Restar operando2
                 instruccion.append(String.format("    SUB AX, %s", operando2)).append("\n");
-                // Guardar resultado en variable temporal
                 instruccion.append(String.format("    MOV %s, AX", temporal));
             }
-
             case "MOV" -> {
-                // Cargar operando2 en AX
                 instruccion.append(String.format("\n    MOV AX, %s", operando2)).append("\n");
-                // Mover contenido de AX a operando1
                 instruccion.append(String.format("    MOV %s, AX", operando1));
             }
-
             default -> throw new IllegalArgumentException("Operador no soportado: " + operador);
         }
 
-        // Retornar la instrucción ASM como cadena
         return instruccion.toString();
     }
 
-    // Generar el archivo ASM final
-    private static void generarArchivoASM(List<String> instruccionesASM, Map<String, Double> valoresVariables,
-            String variableIzquierda) {
-        // Usar FileWriter dentro de try-with-resources para cerrar automáticamente
+    /*
+     * ========================================================================
+     * Generar el archivo ASM.
+     * Se declara ResFinal (por si es negativo),
+     * Y definimos la lógica de SALTOS:
+     *   - si <0 => NO imprime ASM, SÍ imprime ResFinal
+     *   - si >=0 => imprime ASM, NO imprime ResFinal
+     * ========================================================================
+     */
+    private static void generarArchivoASM(
+        List<String> instruccionesASM,
+        Map<String, Double> valoresVariables,
+        String variableIzquierda,
+        String resultadoFinalJava
+    ) {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
 
-            // Escribir configuración inicial del archivo ASM
+            // Configuración inicial
             writer.write(".MODEL SMALL\n");
             writer.write(".STACK 100h\n\n");
             writer.write(".DATA\n");
 
-            // Declarar variables y su valor en .DATA, usando el método convertirValorASM
+            // Declarar variables y su valor en .DATA
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
-                writer.write(
-                        "    " + entry.getKey() + " DW " + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
+                writer.write("    " + entry.getKey() + " DW "
+                             + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
-            // Declarar cadenas y buffers necesarios
+            // Declaraciones originales
             writer.write("    Resultado DB '" + variableIzquierda + " =   $'\n");
             writer.write("    value DB 5 DUP('$') ;Buffer para el valor en texto\n\n");
             writer.write("    Punto  DB   '.  $'\n");
             writer.write("    value1 DB 5 DUP('$') ;Buffer para el valor en texto\n\n");
 
-            // Comenzar segmento de código
+            // NUEVA variable para el resultado (incluye signo si es negativo)
+            writer.write("    ResFinal DB \"" + resultadoFinalJava + "\", '$'\n\n");
+
+            // Segmento de código
             writer.write(".CODE\n");
             writer.write("start:\n");
-
-            // Inicializar segmento de datos
             writer.write("    MOV AX, @DATA\n");
-            writer.write("    MOV DS, AX\n");
+            writer.write("    MOV DS, AX\n\n");
 
-            // Escribir las instrucciones ASM que se generaron en el procesamiento
+            // Instrucciones generadas para la expresión
             for (String instruccion : instruccionesASM) {
                 writer.write("    " + instruccion + "\n");
             }
 
-            // Rutina para convertir la parte entera de la variable en texto y mostrar
-            writer.write("\n    ;Convertir " + variableIzquierda + " a texto\n");
+            // --------------------------------------------------------
+            // Comparamos el resultado con 0
+            // --------------------------------------------------------
+            writer.write("\n    ;------------------------------------------\n");
+            writer.write("    ; Verificar si el resultado es negativo\n");
+            writer.write("    ;------------------------------------------\n");
+            writer.write("    MOV AX, " + variableIzquierda + "\n");
+            writer.write("    CMP AX, 0\n");
+            // Si AX < 0, salta a NEGATIVO
+            writer.write("    JL NEGATIVO\n");
+
+            // =======================================================
+            //   CASO NO NEGATIVO (≥ 0): IMPRIME DESDE ASM
+            // =======================================================
+            writer.write("\nNO_NEGATIVO:\n");
+            writer.write("    ;=============================================\n");
+            writer.write("    ; Imprime parte entera y decimal (ASM normal)\n");
+            writer.write("    ;=============================================\n");
+            // Convertir parte entera
             writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, value\n");
-            writer.write("    MOV BX, 10\n\n");
-
-            writer.write("Enteros:\n");
+            writer.write("    MOV BX, 10\n");
+            writer.write("\nEnteros:\n");
             writer.write("    XOR DX, DX\n");
             writer.write("    DIV BX\n");
             writer.write("    ADD DL, '0'\n");
@@ -477,24 +455,22 @@ public class ExpresionesAritmeticasASM {
             writer.write("    TEST AX, AX\n");
             writer.write("    JNZ Enteros\n\n");
 
-            // Imprimir la cadena que indica el resultado
+            // Mostrar "variableIzquierda = "
             writer.write("    LEA DX, Resultado\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n");
 
-            // Imprimir el valor de la parte entera
+            // Mostrar la parte entera
             writer.write("    LEA DX, value\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
-            // Rutina para convertir la parte decimal de la variable en texto y mostrar
-            writer.write("\n    ;Convertir " + variableIzquierda + "_D a texto\n");
+            // Convertir parte decimal
             writer.write("    MOV AX, " + variableIzquierda + "_D\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, value1\n");
-            writer.write("    MOV BX, 10\n\n");
-
-            writer.write("Decimales:\n");
+            writer.write("    MOV BX, 10\n");
+            writer.write("\nDecimales:\n");
             writer.write("    XOR DX, DX\n");
             writer.write("    DIV BX\n");
             writer.write("    ADD DL, '0'\n");
@@ -504,42 +480,49 @@ public class ExpresionesAritmeticasASM {
             writer.write("    TEST AX, AX\n");
             writer.write("    JNZ Decimales\n\n");
 
-            // Imprimir el punto decimal
+            // Imprimir punto decimal
             writer.write("    LEA DX, Punto\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n");
 
-            // Imprimir la parte decimal
+            // Mostrar parte decimal
             writer.write("    LEA DX, value1\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
-            // Terminar ejecución en DOS
+            // Listo, saltar a FIN
+            writer.write("    JMP FIN\n");
+
+            // =======================================================
+            //   CASO NEGATIVO: NO imprime ASM, SÓLO imprime ResFinal
+            // =======================================================
+            writer.write("\nNEGATIVO:\n");
+            writer.write("    ;=====================================\n");
+            writer.write("    LEA DX, ResFinal\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
+
+            // Etiqueta de fin
+            writer.write("FIN:\n");
             writer.write("    MOV AH, 4Ch\n");
             writer.write("    INT 21h\n");
             writer.write("END start\n");
 
-            // Mensaje en consola si se genera el archivo con éxito
             System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
         } catch (IOException e) {
-            // Imprimir error en caso de fallo al escribir
             System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
         }
     }
 
-    // Convertir valor double a formato para ASM, separando parte entera y decimal
+    // Convertir valor double a formato ASM (parte entera y decimal)
     private static String convertirValorASM(String variable, double valor) {
-        // Obtener parte entera
         int parteEntera = (int) valor;
-        // Multiplicar el decimal por 1000 y redondear
         int parteDecimal = (int) Math.round((valor - parteEntera) * 1000);
 
-        // Formatear parte entera y parte decimal a 3 dígitos
         String parteEnteraFormateada = String.format("%03d", parteEntera);
         String parteDecimalFormateada = String.format("%03d", parteDecimal);
 
-        // Devolver el bloque de declaración (parte entera y decimal) para ASM
         return String.format("%s\n    %s_D DW %s ;Decimales de " + variable,
-                parteEnteraFormateada, variable, parteDecimalFormateada);
+                             parteEnteraFormateada, variable, parteDecimalFormateada);
     }
 }
