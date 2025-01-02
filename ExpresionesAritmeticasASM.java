@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*; // Importación para trabajar con colecciones y utilidades
 import java.util.regex.*; // Importación para trabajar con expresiones regulares
-
 import javax.swing.JFileChooser;
 
 public class ExpresionesAritmeticasASM {
@@ -81,7 +80,7 @@ public class ExpresionesAritmeticasASM {
         for (String temporal : temporales) {
             System.out.println(temporal);
         }
-        System.out.println("Resultado final: " + Resultado);
+        System.out.println("\n - Resultado final: " + Resultado);
 
         // Generar el archivo ASM basado en las instrucciones
         generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
@@ -210,8 +209,7 @@ public class ExpresionesAritmeticasASM {
 
         for (int i = 0; i < operadores.length; i++) {
             // Ajuste del patrón para admitir variables como x_1 o y_123
-            Pattern operacionPattern = Pattern
-                    .compile("([a-zA-Z_][a-zA-Z0-9_]*|\\d+)" + operadores[i] + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+)");
+            Pattern operacionPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*|\\d+)" + operadores[i] + "([a-zA-Z_][a-zA-Z0-9_]*|\\d+)");
 
             Matcher matcher;
             while ((matcher = operacionPattern.matcher(expresion)).find()) {
