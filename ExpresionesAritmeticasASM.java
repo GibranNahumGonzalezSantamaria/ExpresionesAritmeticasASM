@@ -294,7 +294,7 @@ public class ExpresionesAritmeticasASM {
 
             // Declarar variables en el segmento .DATA
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
-                writer.write("    " + entry.getKey() + " DW " + convertirValorASM(entry.getValue()) + "\n");
+                writer.write("    " + entry.getKey() + " DW " + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
             if (variableIzquierda != null) {
@@ -357,8 +357,20 @@ public class ExpresionesAritmeticasASM {
         }
     }
 
-    // Convierte un valor double a un formato compatible con ASM
-    private static String convertirValorASM(double valor) {
-        return String.format("%.0f", valor);
+    // Convierte un valor double a un formato compatible con ASM, separando parte entera y decimal
+    private static String convertirValorASM(String variable, double valor) {
+        // Obtiene la parte entera y la parte decimal, limitados a tres dígitos
+        int parteEntera = (int) valor; // Parte entera
+        int parteDecimal = (int) Math.round((valor - parteEntera) * 1000); // Tres decimales como entero
+
+        // Ajusta las partes al formato de tres dígitos
+        String parteEnteraFormateada = String.format("%03d", parteEntera);
+        String parteDecimalFormateada = String.format("%03d", parteDecimal);
+
+        // Retorna el formato ASM deseado
+        return String.format("%s DW %s\n    %s_D DW %s",
+                variable, parteEnteraFormateada,
+                variable, parteDecimalFormateada
+        );
     }
 }
