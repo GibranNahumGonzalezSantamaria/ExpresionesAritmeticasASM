@@ -1,4 +1,3 @@
-
 // Importar clase para representar archivos
 import java.io.File;
 
@@ -23,7 +22,6 @@ import javax.swing.JFileChooser;
 
 // Declarar clase principal
 public class ExpresionesAritmeticasASM {
-
     // Declarar contador para variables temporales
     private static int temporalCounter = 1;
 
@@ -372,7 +370,7 @@ public class ExpresionesAritmeticasASM {
                 instruccion.append(String.format("\n    MOV AX, %s", operando1)).append("\n");
                 instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n");
                 // Preparar registro para multiplicación
-                instruccion.append("    CWD BX\n");
+                instruccion.append("    CWD\n");
                 // Instrucción de multiplicación (con signo)
                 instruccion.append("    IMUL BX\n");
                 // Almacenar el resultado en variable temporal
@@ -387,7 +385,7 @@ public class ExpresionesAritmeticasASM {
                 // Cargar operando2 en BX
                 instruccion.append(String.format("    MOV BX, %s", operando2)).append("\n");
                 // Preparar registro para división
-                instruccion.append("    CWD BX\n");
+                instruccion.append("    CWD\n");
                 // Instrucción de división con signo
                 instruccion.append("    IDIV BX\n");
                 // Almacenar el resultado en variable temporal
