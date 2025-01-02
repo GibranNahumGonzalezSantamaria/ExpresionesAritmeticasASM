@@ -368,6 +368,6 @@ public class ExpresionesAritmeticasASM {
         String parteDecimalFormateada = String.format("%03d", parteDecimal);
 
         // Retorna el formato ASM deseado
-        return String.format("%s\n    %s_D DW %s", parteEnteraFormateada, variable, parteDecimalFormateada);
+        return String.format("%s\n    %s_D DW %s ;Decimales de " + variable, parteEnteraFormateada, variable, parteDecimalFormateada);
     }
 }
