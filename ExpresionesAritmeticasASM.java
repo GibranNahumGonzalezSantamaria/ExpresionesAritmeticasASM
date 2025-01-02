@@ -76,11 +76,12 @@ public class ExpresionesAritmeticasASM {
         // Procesar la expresión y generar el resultado final
         String Resultado = procesarExpresion(input, temporales, instruccionesASM);
 
+        System.out.print("\n");
         // Mostrar temporales generados
         for (String temporal : temporales) {
             System.out.println(temporal);
         }
-        System.out.println("\n - Resultado final: " + Resultado);
+        System.out.println("\n - Resultado final: " + Resultado + "\n");
 
         // Generar el archivo ASM basado en las instrucciones
         generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda);
@@ -350,9 +351,9 @@ public class ExpresionesAritmeticasASM {
 
             writer.write("END start\n");
 
-            System.out.println("Archivo ASM generado exitosamente: Resultado.ASM");
+            System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
         } catch (IOException e) {
-            System.err.println("Error al generar el archivo ASM: " + e.getMessage());
+            System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
         }
     }
 
