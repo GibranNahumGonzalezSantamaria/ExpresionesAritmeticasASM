@@ -333,13 +333,15 @@ public class ExpresionesAritmeticasASM {
             if (variableIzquierda != null) {
                 writer.write("    " + variableIzquierda + " DW ?\n");
             }
-
+/* 
             for (int i = 1; i < temporalCounter; i++) {
                 writer.write("    T" + i + " DW ?\n");
             }
-
+*/
             writer.write("    Resultado DB '" + variableIzquierda + " =   $'\n");
             writer.write("    value DB 5 DUP('$') ;Buffer para el valor en texto\n\n");
+            writer.write("    Punto  DB   '.  $'\n");
+            writer.write("    value1 DB 5 DUP('$') ;Buffer para el valor en texto\n\n");
 
             writer.write(".CODE\n");
             writer.write("start:\n");
@@ -359,7 +361,8 @@ public class ExpresionesAritmeticasASM {
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, value\n");
             writer.write("    MOV BX, 10\n\n");
-            writer.write("next_digit:\n");
+            
+            writer.write("Enteros:\n");
             writer.write("    XOR DX, DX\n");
             writer.write("    DIV BX\n");
             writer.write("    ADD DL, '0'\n");
@@ -367,7 +370,7 @@ public class ExpresionesAritmeticasASM {
             writer.write("    MOV [DI], DL\n");
             writer.write("    DEC CX\n");
             writer.write("    TEST AX, AX\n");
-            writer.write("    JNZ next_digit\n\n");
+            writer.write("    JNZ Enteros\n\n");
 
             // Mostrar el resultado
             writer.write("    LEA DX, Resultado\n");
@@ -375,6 +378,32 @@ public class ExpresionesAritmeticasASM {
             writer.write("    INT 21h\n");
 
             writer.write("    LEA DX, value\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
+
+            // Rutina para convertir variable en texto y mostrar resultado
+            writer.write("\n    ;Convertir " + variableIzquierda + "_D a texto\n");
+            writer.write("    MOV AX, " + variableIzquierda + "_D\n");
+            writer.write("    MOV CX, 5\n");
+            writer.write("    LEA DI, value1\n");
+            writer.write("    MOV BX, 10\n\n");
+            
+            writer.write("Decimales:\n");
+            writer.write("    XOR DX, DX\n");
+            writer.write("    DIV BX\n");
+            writer.write("    ADD DL, '0'\n");
+            writer.write("    DEC DI\n");
+            writer.write("    MOV [DI], DL\n");
+            writer.write("    DEC CX\n");
+            writer.write("    TEST AX, AX\n");
+            writer.write("    JNZ Decimales\n\n");
+
+            // Mostrar el resultado
+            writer.write("    LEA DX, Punto\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n");
+
+            writer.write("    LEA DX, value1\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
