@@ -131,27 +131,64 @@ public class ExpresionesAritmeticasASM {
      *   - Sin caracteres no permitidos
      */
     private static boolean esExpresionValida(String expresion) {
-        // Validar con una expresión global: LadoIzq=algo
-        String patronGeneral = "^[a-zA-Z_][a-zA-Z0-9_]*=([^=]+)$";
-        if (!expresion.matches(patronGeneral)) {
-            return false;
+        // Verificar que no haya operadores consecutivos
+        Pattern operadoresConsecutivos = Pattern.compile("[+\\-*/=]{2,}");
+        Matcher matcherOperadores = operadoresConsecutivos.matcher(expresion);
+        if (matcherOperadores.find()) {
+            return false; // Falla si encuentra operadores consecutivos
         }
 
-        // Verificar operadores consecutivos o casos como "aa(("
-        // => .*( [+\-*/=]{2,} | [^a-zA-Z0-9_]\( ) .*
-        String operadoresConsecutivos = ".*([+\\-*/=]{2,}|[^a-zA-Z0-9_]\\().*";
-        if (expresion.matches(operadoresConsecutivos)) {
-            return false;
+        // Validar que no haya paréntesis sin operador antes (p.ej. a(b))
+        Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(=])\\(");
+        Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
+        if (matcherParenSinOperador.find()) {
+            return false; // Falla si el paréntesis no tiene un operador antes
         }
 
-        // Revisar balance de paréntesis
-        int balance = 0;
+        // Verificar que no haya números seguidos de '(' sin operador (p.ej. 5(3+2))
+        Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
+        Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
+        if (matcherNumeroSinOperador.find()) {
+            return false; // Falla si un número va inmediatamente seguido de '('
+        }
+
+        // Verificar que haya exactamente un '='
+        long countIgual = expresion.chars().filter(ch -> ch == '=').count();
+        if (countIgual != 1) {
+            return false; // Falla si no hay '=' o hay más de uno
+        }
+
+        // Validar que el lado izquierdo del '=' sea un identificador válido
+        String[] partes = expresion.split("=", 2);
+        String ladoIzquierdo = partes[0];
+        if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+            return false; // Falla si no es un nombre de variable válido
+        }
+
+        // Verificar que no haya caracteres inválidos en la expresión
+        Pattern caracteresInvalidos = Pattern.compile("[^a-zA-Z0-9_+\\-*/=().]");
+        Matcher matcherCaracteresInvalidos = caracteresInvalidos.matcher(expresion);
+        if (matcherCaracteresInvalidos.find()) {
+            return false; // Falla si encuentra símbolos no permitidos
+        }
+
+        // Verificar balance de paréntesis
+        int contadorParentesis = 0;
         for (char c : expresion.toCharArray()) {
-            if (c == '(') balance++;
-            if (c == ')') balance--;
-            if (balance < 0) return false; // más ) que (
+            if (c == '(')
+                contadorParentesis++;
+            if (c == ')')
+                contadorParentesis--;
+            if (contadorParentesis < 0) {
+                return false; // Falla si hay más ')' que '('
+            }
         }
-        return (balance == 0);
+        if (contadorParentesis != 0) {
+            return false; // Falla si no hay balance total
+        }
+
+        // Si llega aquí, la expresión es válida
+        return true;
     }
 
     /**
