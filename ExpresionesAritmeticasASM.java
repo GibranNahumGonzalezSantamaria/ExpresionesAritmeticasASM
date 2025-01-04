@@ -14,13 +14,13 @@ import javax.swing.JFileChooser;
  */
 public class ExpresionesAritmeticasASM {
     // ---------------------------------------------------------------------------------
-    //                                PROPIEDADES
+    // PROPIEDADES
     // ---------------------------------------------------------------------------------
-    private static int temporalCounter = 1;  // Contador para variables temporales
+    private static int temporalCounter = 1; // Contador para variables temporales
     private static final int NOMBRE_RANDOM_LEN = 5; // Tamaño por defecto para nombres random
 
     // ---------------------------------------------------------------------------------
-    //                             MÉTODO PRINCIPAL
+    // MÉTODO PRINCIPAL
     // ---------------------------------------------------------------------------------
     @SuppressWarnings("ConvertToTryWithResources")
     public static void main(String[] args) {
@@ -28,104 +28,124 @@ public class ExpresionesAritmeticasASM {
         while (true) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Seleccione un archivo .txt");
-    
+
             // Leer el archivo .txt
             int result = fileChooser.showOpenDialog(null);
             if (result != JFileChooser.APPROVE_OPTION) {
                 System.out.println("No se seleccionó ningún archivo.");
                 return;
             }
-    
+
             File selectedFile = fileChooser.getSelectedFile();
             if (!selectedFile.getName().endsWith(".txt")) {
                 System.err.println("Por favor, seleccione un archivo con extensión .txt");
                 continue;
             }
-    
+
             // Cargar la expresión del archivo (sin espacios)
+            String expresionAritmeticaOriginal;
             String expresionAritmetica;
             try {
                 String contenido = new String(Files.readAllBytes(Paths.get(selectedFile.getAbsolutePath())));
-                expresionAritmetica = contenido.replaceAll("\\s+", "").toLowerCase(); // Convertir a minúsculas
+                expresionAritmeticaOriginal = contenido.replaceAll("\\s+", "").toLowerCase(); // Mantener original
+                expresionAritmetica = eliminarDecimales(expresionAritmeticaOriginal); // Procesar para eliminar
+                                                                                      // decimales
             } catch (IOException e) {
                 System.err.println("Error al leer el archivo: " + e.getMessage());
                 return;
             }
 
-            // Mostrar la expresión en consola
-            System.out.println("\nExpresión Aritmética (en minúsculas): " + expresionAritmetica + "\n");
-    
+            // Mostrar la expresión original en consola
+            System.out.println("\nExpresión Aritmética: " + expresionAritmeticaOriginal + "\n");
+
             // Validar la expresión
             if (!esExpresionValida(expresionAritmetica)) {
-                System.err.println("La expresión es inválida (operadores consecutivos, paréntesis mal, etc.). Por favor, seleccione un nuevo archivo.");
+                System.err.println(
+                        "La expresión es inválida (operadores consecutivos, paréntesis mal, etc.). Por favor, seleccione un nuevo archivo.");
                 continue;
             }
-    
+
             // Si la expresión es válida, continuar con el procesamiento
             // Identificar variable izquierda y el resto de variables
             String variableIzquierda = identificarVariableIzquierda(expresionAritmetica);
             Set<String> variables = identificarVariables(expresionAritmetica);
             variables.remove(variableIzquierda);
-    
+
             // Pedir valores de las variables
             Scanner scanner = new Scanner(System.in);
             Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
             scanner.close();
-    
+
             // Reemplazar las variables en la expresión con su propio nombre
             String input = expresionAritmetica;
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
                 input = input.replaceAll("\\b" + Pattern.quote(entry.getKey()) + "\\b", entry.getKey());
             }
-    
+
             // Generar estructuras para temporales e instrucciones ASM
             List<String> temporales = new ArrayList<>();
             List<String> instruccionesASM = new ArrayList<>();
-    
+
             // Procesar la expresión y generar ASM
             procesarExpresion(input, temporales, instruccionesASM, valoresVariables);
-    
+
             // Mostrar en consola las operaciones intermedias
             System.out.println();
             for (String temp : temporales) {
                 System.out.println(temp);
             }
-    
+
             // Resultado calculado en Java
             double resultadoNumerico = valoresVariables.get(variableIzquierda);
             System.out.println("\n - Resultado numérico calculado: " + String.format("%.3f", resultadoNumerico) + "\n");
-    
-            // Definir la cadena que representará el resultado en ASM (si negativo, anteponemos '-')
+
+            // Definir la cadena que representará el resultado en ASM (si negativo,
+            // anteponemos '-')
             String resultadoFinalJava = (resultadoNumerico < 0)
                     ? "-" + String.format("%.3f", Math.abs(resultadoNumerico))
                     : String.format("%.3f", resultadoNumerico);
-    
+
             // Verificar si es negativo
             boolean esNegativo = (resultadoNumerico < 0);
-    
+
             // Generar el archivo ASM
             try {
-                generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava, esNegativo);
+                generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava,
+                        esNegativo);
                 System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
             } catch (IOException e) {
                 System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
             }
-    
+
             // Salir del bucle si todo es válido y se procesa correctamente
             break;
         }
     }
-    
+
+    private static String eliminarDecimales(String expresion) {
+        Pattern numerosConDecimales = Pattern.compile("\\d+\\.\\d+");
+        Matcher matcher = numerosConDecimales.matcher(expresion);
+        StringBuffer sb = new StringBuffer();
+
+        while (matcher.find()) {
+            String numeroOriginal = matcher.group();
+            String numeroRedondeado = numeroOriginal.split("\\.")[0]; // Quitar parte decimal
+            matcher.appendReplacement(sb, numeroRedondeado);
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
     // ---------------------------------------------------------------------------------
-    //                         VALIDACIÓN DE LA EXPRESIÓN
+    // VALIDACIÓN DE LA EXPRESIÓN
     // ---------------------------------------------------------------------------------
     /**
      * Valida la estructura global de una expresión, revisando:
-     *   - Solo un '='
-     *   - No operadores consecutivos
-     *   - Paréntesis balanceados
-     *   - Identificador válido a la izquierda
-     *   - Sin caracteres no permitidos
+     * - Solo un '='
+     * - No operadores consecutivos
+     * - Paréntesis balanceados
+     * - Identificador válido a la izquierda
+     * - Sin caracteres no permitidos
      */
     private static boolean esExpresionValida(String expresion) {
         // Verificar que no haya operadores consecutivos
@@ -134,27 +154,27 @@ public class ExpresionesAritmeticasASM {
         if (matcherOperadores.find()) {
             return false; // Falla si encuentra operadores consecutivos
         }
-    
+
         // Validar que no haya paréntesis sin operador antes (p.ej. a(b))
         Pattern parenSinOperador = Pattern.compile("(?<![+\\-*/(=])\\(");
         Matcher matcherParenSinOperador = parenSinOperador.matcher(expresion);
         if (matcherParenSinOperador.find()) {
             return false; // Falla si el paréntesis no tiene un operador antes
         }
-    
+
         // Verificar que no haya números seguidos de '(' sin operador (p.ej. 5(3+2))
         Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
         Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
         if (matcherNumeroSinOperador.find()) {
             return false; // Falla si un número va inmediatamente seguido de '('
         }
-    
+
         // Verificar que haya exactamente un '='
         long countIgual = expresion.chars().filter(ch -> ch == '=').count();
         if (countIgual != 1) {
             return false; // Falla si no hay '=' o hay más de uno
         }
-    
+
         // Validar que el lado izquierdo del '=' sea un identificador válido
         String[] partes = expresion.split("=", 2);
         String ladoIzquierdo = partes[0].trim();
@@ -162,21 +182,21 @@ public class ExpresionesAritmeticasASM {
         if (!ladoIzquierdo.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
             return false; // Falla si no es un nombre de variable válido
         }
-    
+
         // Verificar que el lado izquierdo no esté en el lado derecho
         Pattern variableLadoIzquierdo = Pattern.compile("\\b" + Pattern.quote(ladoIzquierdo) + "\\b");
         Matcher matcherVariableLadoIzquierdo = variableLadoIzquierdo.matcher(ladoDerecho);
         if (matcherVariableLadoIzquierdo.find()) {
             return false; // Falla si la variable izquierda aparece en el lado derecho
         }
-    
+
         // Verificar que no haya caracteres inválidos en la expresión
         Pattern caracteresInvalidos = Pattern.compile("[^a-zA-Z0-9_+\\-*/=().]");
         Matcher matcherCaracteresInvalidos = caracteresInvalidos.matcher(expresion);
         if (matcherCaracteresInvalidos.find()) {
             return false; // Falla si encuentra símbolos no permitidos
         }
-    
+
         // Verificar balance de paréntesis
         int contadorParentesis = 0;
         for (char c : expresion.toCharArray()) {
@@ -191,11 +211,10 @@ public class ExpresionesAritmeticasASM {
         if (contadorParentesis != 0) {
             return false; // Falla si no hay balance total
         }
-    
+
         // Si llega aquí, la expresión es válida
         return true;
     }
-    
 
     /**
      * Separa la parte izquierda del '=' para obtener la variable asignada.
@@ -218,7 +237,7 @@ public class ExpresionesAritmeticasASM {
     }
 
     // ---------------------------------------------------------------------------------
-    //                  PEDIR VALORES PARA LAS VARIABLES DESDE CONSOLA
+    // PEDIR VALORES PARA LAS VARIABLES DESDE CONSOLA
     // ---------------------------------------------------------------------------------
     /**
      * Pide al usuario los valores numéricos para cada variable.
@@ -234,7 +253,7 @@ public class ExpresionesAritmeticasASM {
                     map.put(var, val);
                     break;
                 } catch (NumberFormatException ex) {
-                    System.out.println("Error: Solo se permiten números.");
+                    System.out.println("   - Error: Solo se permiten números.");
                 }
             }
         }
@@ -242,16 +261,15 @@ public class ExpresionesAritmeticasASM {
     }
 
     // ---------------------------------------------------------------------------------
-    //                   PROCESAR LA EXPRESIÓN Y GENERAR INSTRUCCIONES ASM
+    // PROCESAR LA EXPRESIÓN Y GENERAR INSTRUCCIONES ASM
     // ---------------------------------------------------------------------------------
     private static String procesarExpresion(
             String expresion,
             List<String> temporales,
             List<String> instruccionesASM,
-            Map<String, Double> valoresVariables
-    ) {
+            Map<String, Double> valoresVariables) {
         String[] operadoresJerarquia = { "\\(", "\\*", "/", "\\+", "-", "=" };
-        String[] nombresOperadores   = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
+        String[] nombresOperadores = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
 
         // Primero procesamos paréntesis de manera recursiva
         Pattern patParentesis = Pattern.compile("\\(([^()]+)\\)");
@@ -266,8 +284,7 @@ public class ExpresionesAritmeticasASM {
         for (int i = 1; i < operadoresJerarquia.length; i++) {
             String regex = String.format(
                     "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)%s([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)",
-                    operadoresJerarquia[i]
-            );
+                    operadoresJerarquia[i]);
 
             Pattern patOp = Pattern.compile(regex);
             Matcher m;
@@ -320,7 +337,7 @@ public class ExpresionesAritmeticasASM {
             case "DIV" -> a / b;
             case "ADD" -> a + b;
             case "SUB" -> a - b;
-            default    -> throw new IllegalArgumentException("Operador no soportado: " + op);
+            default -> throw new IllegalArgumentException("Operador no soportado: " + op);
         };
     }
 
@@ -372,31 +389,30 @@ public class ExpresionesAritmeticasASM {
     }
 
     // ---------------------------------------------------------------------------------
-    //                    GENERACIÓN DEL ARCHIVO ASM (OFUSCADO)
+    // GENERACIÓN DEL ARCHIVO ASM (OFUSCADO)
     // ---------------------------------------------------------------------------------
 
     /**
      * Genera el archivo "Resultado.ASM" con:
-     *  - Declaración de variables (parte entera, parte decimal).
-     *  - Etiquetas y buffers con nombres aleatorios.
-     *  - Lógica ofuscada para imprimir resultados.
+     * - Declaración de variables (parte entera, parte decimal).
+     * - Etiquetas y buffers con nombres aleatorios.
+     * - Lógica ofuscada para imprimir resultados.
      */
     private static void generarArchivoASM(
             List<String> instruccionesASM,
             Map<String, Double> valoresVariables,
             String variableIzquierda,
             String resultadoFinalJava,
-            boolean esNegativo
-    ) throws IOException {
+            boolean esNegativo) throws IOException {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
             // Etiquetas y nombres de buffers random
             String labelCasoNoNeg = generarNombreAleatorio("L_", NOMBRE_RANDOM_LEN);
-            String labelCasoNeg   = generarNombreAleatorio("B_", NOMBRE_RANDOM_LEN);
-            String bufferTitulo   = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferEntero   = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferPunto    = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferDecimal  = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String finPrograma    = generarNombreAleatorio("END_", NOMBRE_RANDOM_LEN);
+            String labelCasoNeg = generarNombreAleatorio("B_", NOMBRE_RANDOM_LEN);
+            String bufferTitulo = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
+            String bufferEntero = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
+            String bufferPunto = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
+            String bufferDecimal = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
+            String finPrograma = generarNombreAleatorio("END_", NOMBRE_RANDOM_LEN);
 
             // dummy variable para resultado negativo
             String varNegativo = generarNombreAleatorio("DUM_", NOMBRE_RANDOM_LEN);
@@ -407,7 +423,7 @@ public class ExpresionesAritmeticasASM {
             // 2) Declarar variables en .DATA
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
                 writer.write("    " + entry.getKey() + " DW "
-                             + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
+                        + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
             // 3) Declaraciones base
@@ -515,11 +531,12 @@ public class ExpresionesAritmeticasASM {
     }
 
     // ---------------------------------------------------------------------------------
-    //                              MÉTODOS AUXILIARES
+    // MÉTODOS AUXILIARES
     // ---------------------------------------------------------------------------------
 
     /**
-     * Genera un nombre aleatorio usando letras mayúsculas y dígitos, con un prefijo.
+     * Genera un nombre aleatorio usando letras mayúsculas y dígitos, con un
+     * prefijo.
      */
     private static String generarNombreAleatorio(String prefijo, int longitud) {
         String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -567,7 +584,7 @@ public class ExpresionesAritmeticasASM {
 
         // Formatear
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%03d", parteEntera));  // primera DW (parte entera)
+        sb.append(String.format("%03d", parteEntera)); // primera DW (parte entera)
         sb.append("\n    ");
         sb.append(variable).append("_D DW ");
         sb.append(String.format("%03d", parteDecimal)); // segunda DW (parte decimal)
