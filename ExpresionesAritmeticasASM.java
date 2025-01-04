@@ -483,6 +483,17 @@ public class ExpresionesAritmeticasASM {
             } else {
                 // CASO NEGATIVO
                 writer.write(labelCasoNeg + ":\n");
+
+                writer.write("    MOV AX, " + variableIzquierda + "\n");
+                writer.write("    MOV CX, 5\n");
+                writer.write("    LEA DI, " + bufferEntero + "\n");
+                writer.write("    MOV BX, 10\n");
+
+                // Imprime el "var ="
+                writer.write("    LEA DX, " + bufferTitulo + "\n");
+                writer.write("    MOV AH, 09h\n");
+                writer.write("    INT 21h\n");
+
                 // Imprimimos la variable ofuscada
                 writer.write("    LEA DX, " + varNegativo + "\n");
                 writer.write("    MOV AH, 09h\n");
