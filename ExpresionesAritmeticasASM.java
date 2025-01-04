@@ -43,20 +43,17 @@ public class ExpresionesAritmeticasASM {
             }
 
             // Cargar la expresión del archivo (sin espacios)
-            String expresionAritmeticaOriginal;
             String expresionAritmetica;
             try {
                 String contenido = new String(Files.readAllBytes(Paths.get(selectedFile.getAbsolutePath())));
-                expresionAritmeticaOriginal = contenido.replaceAll("\\s+", "").toLowerCase(); // Mantener original
-                expresionAritmetica = eliminarDecimales(expresionAritmeticaOriginal); // Procesar para eliminar
-                                                                                      // decimales
+                expresionAritmetica = contenido.replaceAll("\\s+", "").toLowerCase(); // Convertir a minúsculas
             } catch (IOException e) {
                 System.err.println("Error al leer el archivo: " + e.getMessage());
                 return;
             }
 
-            // Mostrar la expresión original en consola
-            System.out.println("\nExpresión Aritmética: " + expresionAritmeticaOriginal + "\n");
+            // Mostrar la expresión en consola
+            System.out.println("\nExpresión Aritmética (en minúsculas): " + expresionAritmetica + "\n");
 
             // Validar la expresión
             if (!esExpresionValida(expresionAritmetica)) {
@@ -120,20 +117,6 @@ public class ExpresionesAritmeticasASM {
             // Salir del bucle si todo es válido y se procesa correctamente
             break;
         }
-    }
-
-    private static String eliminarDecimales(String expresion) {
-        Pattern numerosConDecimales = Pattern.compile("\\d+\\.\\d+");
-        Matcher matcher = numerosConDecimales.matcher(expresion);
-        StringBuffer sb = new StringBuffer();
-
-        while (matcher.find()) {
-            String numeroOriginal = matcher.group();
-            String numeroRedondeado = numeroOriginal.split("\\.")[0]; // Quitar parte decimal
-            matcher.appendReplacement(sb, numeroRedondeado);
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
     }
 
     // ---------------------------------------------------------------------------------
@@ -253,7 +236,7 @@ public class ExpresionesAritmeticasASM {
                     map.put(var, val);
                     break;
                 } catch (NumberFormatException ex) {
-                    System.out.println("   - Error: Solo se permiten números.");
+                    System.out.println("Error: Solo se permiten números.");
                 }
             }
         }
@@ -442,7 +425,9 @@ public class ExpresionesAritmeticasASM {
 
             // 5) Instrucciones generadas
             for (String instruccion : instruccionesASM) {
-                writer.write("    " + instruccion + "\n");
+                // Reemplazar el punto por un punto y coma en los valores numéricos
+                String instruccionModificada = instruccion.replaceAll("(\\d+)\\.(\\d+)", "$1;$2");
+                writer.write("    " + instruccionModificada + "\n");
             }
 
             // 6) Según esNegativo, generamos un label para la parte de impresión
