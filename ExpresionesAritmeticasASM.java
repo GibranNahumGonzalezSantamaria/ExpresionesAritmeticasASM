@@ -108,7 +108,7 @@ public class ExpresionesAritmeticasASM {
             // Generar el archivo ASM
             try {
                 generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava,
-                        esNegativo);
+                        esNegativo, expresionAritmetica);
                 System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
             } catch (IOException e) {
                 System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
@@ -386,7 +386,8 @@ public class ExpresionesAritmeticasASM {
             Map<String, Double> valoresVariables,
             String variableIzquierda,
             String resultadoFinalJava,
-            boolean esNegativo) throws IOException {
+            boolean esNegativo,
+            String expresionAritmetica) throws IOException {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
             // Etiquetas y nombres de buffers random
             String labelCasoNoNeg = generarNombreAleatorio("L_", NOMBRE_RANDOM_LEN);
@@ -397,8 +398,9 @@ public class ExpresionesAritmeticasASM {
             String bufferDecimal = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
             String finPrograma = generarNombreAleatorio("END_", NOMBRE_RANDOM_LEN);
 
-            // dummy variable para resultado negativo
+            // Dummy variable para resultado negativo
             String varNegativo = generarNombreAleatorio("DUM_", NOMBRE_RANDOM_LEN);
+            String bufferExpresion = generarNombreAleatorio("EXP_", NOMBRE_RANDOM_LEN);
 
             // 1) Encabezado
             agregarEncabezado(writer);
@@ -409,7 +411,8 @@ public class ExpresionesAritmeticasASM {
                         + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
-            // 3) Declaraciones base
+            // Declarar la expresión aritmética como una cadena
+            writer.write("    " + bufferExpresion + " DB '" + expresionAritmetica + "', 0Dh, 0Ah, '$'\n");
             writer.write("    " + bufferTitulo + " DB '" + variableIzquierda + " =   $'\n");
             writer.write("    " + bufferEntero + " DB 5 DUP('$')\n");
             writer.write("    " + bufferPunto + "  DB '.  $'\n");
@@ -420,8 +423,13 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    " + varNegativo + " DB \"" + resultadoFinalJava + "\", '$'\n\n");
             }
 
-            // 4) Segmento de código
+            // 3) Segmento de código
             agregarSegmentoCodigoInicio(writer);
+
+            // Imprimir la expresión aritmética
+            writer.write("    LEA DX, " + bufferExpresion + "\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
             // 5) Instrucciones generadas
             for (String instruccion : instruccionesASM) {
@@ -434,8 +442,6 @@ public class ExpresionesAritmeticasASM {
             if (!esNegativo) {
                 // NO NEGATIVO
                 writer.write(labelCasoNoNeg + ":\n");
-                // Convertir parte entera
-                // (Ofuscación: instrucción redundante)
                 writer.write("    MOV AX, AX ; NEUTRAL OP\n");
 
                 writer.write("    MOV AX, " + variableIzquierda + "\n");
