@@ -46,14 +46,14 @@ public class ExpresionesAritmeticasASM {
             String expresionAritmetica;
             try {
                 String contenido = new String(Files.readAllBytes(Paths.get(selectedFile.getAbsolutePath())));
-                expresionAritmetica = contenido.replaceAll("\\s+", "");
+                expresionAritmetica = contenido.replaceAll("\\s+", "").toLowerCase(); // Convertir a minúsculas
             } catch (IOException e) {
                 System.err.println("Error al leer el archivo: " + e.getMessage());
                 return;
             }
-    
+
             // Mostrar la expresión en consola
-            System.out.println("\nExpresión Aritmética: " + expresionAritmetica + "\n");
+            System.out.println("\nExpresión Aritmética (en minúsculas): " + expresionAritmetica + "\n");
     
             // Validar la expresión
             if (!esExpresionValida(expresionAritmetica)) {
