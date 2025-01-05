@@ -297,7 +297,7 @@ public class ExpresionesAritmeticasASM {
         // Luego iteramos operadores en orden
         for (int i = 1; i < operadoresJerarquia.length; i++) {
             String regex = String.format(
-                    "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)%s([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)",
+                    "([a-zA-Z_][a-zA-Z0-9_]*|\\-?\\d+(\\.\\d+)?|T\\d+)%s([a-zA-Z_][a-zA-Z0-9_]*|\\-?\\d+(\\.\\d+)?|T\\d+)",
                     operadoresJerarquia[i]);
 
             Pattern patOp = Pattern.compile(regex);
@@ -361,18 +361,12 @@ public class ExpresionesAritmeticasASM {
             return operando + "_D"; // Agregar sufijo "_D"
         }
 
-        // Caso: Número entero
-        if (operando.matches("\\d+")) {
-            return "000"; // Reemplazar números enteros por tres ceros
-        }
-
-        // Caso: Número decimal
-        // (solo verificamos que sea "algo.algo" y devolvemos la parte de después del
-        // '.')
-        if (operando.matches("\\d+.\\d+")) {
+        if (operando.matches("\\-?\\d+\\.\\d+")) { // Número decimal negativo o positivo
             String[] partes = operando.split("\\.");
-            // Nos quedamos directamente con la parte decimal, sin relanzar excepción
             return partes[1];
+        }
+        if (operando.matches("\\-?\\d+")) { // Número entero negativo o positivo
+            return operando.startsWith("-") ? "000" : "000"; // Procesar como 000 o similar
         }
 
         // Por defecto, devolver el operando tal cual (nunca debería llegar aquí)
@@ -496,8 +490,8 @@ public class ExpresionesAritmeticasASM {
                 }
             }
 
-            writer.write("    Resultado DB 0Dh, 0Ah, '" + variableIzquierda + " = ', 5 DUP('$')\n");
-            writer.write("    Signo DB " + convertirCadenaADecimal(String.valueOf(Signo)) + ", '$'\n");
+            writer.write("    Resultado DB 0Dh, 0Ah, '" + variableIzquierda + " = ', '$'\n");
+            writer.write("    Signo DB " + convertirCadenaADecimal(String.valueOf(Signo)) + ", 5 DUP('$')\n");
             writer.write("    Enteros DB " + convertirCadenaADecimal(parteEntera) + ", 5 DUP('$')\n");
             writer.write("    Punto DB '.', '$'\n");
             writer.write("    Decimales DB " + convertirCadenaADecimal(parteDecimal) + ", 5 DUP('$')\n\n");
