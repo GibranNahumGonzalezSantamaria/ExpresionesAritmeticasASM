@@ -483,7 +483,20 @@ public class ExpresionesAritmeticasASM {
             }
 
             writer.write("\n    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
-            writer.write("    Resultado DB '" + variableIzquierda + " = ', 5 DUP('$')\n");
+
+            // Declarar las variables con sus valores para imprimir (excluyendo temporales y
+            // variableIzquierda)
+            for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
+                String nombreVariable = entry.getKey();
+                if (!nombreVariable.equals(variableIzquierda) && !nombreVariable.startsWith("T")) {
+                    double valor = entry.getValue();
+                    String valorFormateado = String.format(Locale.US, "%.3f", valor);
+                    writer.write("    " + nombreVariable + "_T DB '  " + nombreVariable + " = " + valorFormateado
+                            + "', 0Dh, 0Ah, '$'\n");
+                }
+            }
+
+            writer.write("    Resultado DB 0Dh, 0Ah, '" + variableIzquierda + " = ', 5 DUP('$')\n");
             writer.write("    Signo DB " + convertirCadenaADecimal(String.valueOf(Signo)) + ", '$'\n");
             writer.write("    Enteros DB " + convertirCadenaADecimal(parteEntera) + ", 5 DUP('$')\n");
             writer.write("    Punto DB '.', '$'\n");
@@ -496,7 +509,19 @@ public class ExpresionesAritmeticasASM {
             writer.write("    ;Imprimir Expresión Aritmetica\n");
             writer.write("    LEA DX, ExpresionAritmetica\n");
             writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n");
+            writer.write("    INT 21h\n\n");
+
+            // Imprimir los valores de las variables (excluyendo temporales y
+            // variableIzquierda)
+            writer.write("    ;Imprimir variables\n");
+            for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
+                String nombreVariable = entry.getKey();
+                if (!nombreVariable.equals(variableIzquierda) && !nombreVariable.startsWith("T")) {
+                    writer.write("    LEA DX, " + nombreVariable + "_T\n");
+                    writer.write("    MOV AH, 09h\n");
+                    writer.write("    INT 21h\n");
+                }
+            }
 
             // 4) Generar las instrucciones ASM
             for (String instruccion : instruccionesASM) {
@@ -516,8 +541,9 @@ public class ExpresionesAritmeticasASM {
             writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, " + variableIzquierda + "\n");
-            writer.write("    MOV BX, 10\n");
-            writer.write("\n    LOOP_Enteros:\n");
+            writer.write("    MOV BX, 10\n\n");
+
+            writer.write("    LOOP_Enteros:\n");
             writer.write("        XOR DX, DX\n");
             writer.write("        DIV BX\n");
             writer.write("        ADD DL, '0'\n");
@@ -544,8 +570,9 @@ public class ExpresionesAritmeticasASM {
             writer.write("    MOV AX, " + variableIzquierda + "_D\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, " + variableIzquierda + "_D\n");
-            writer.write("    MOV BX, 10\n");
-            writer.write("\n    LOOP_Decimales:\n");
+            writer.write("    MOV BX, 10\n\n");
+
+            writer.write("    LOOP_Decimales:\n");
             writer.write("        XOR DX, DX\n");
             writer.write("        DIV BX\n");
             writer.write("        ADD DL, '0'\n");
