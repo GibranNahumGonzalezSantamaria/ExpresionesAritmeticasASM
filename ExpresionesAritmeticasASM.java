@@ -57,7 +57,7 @@ public class ExpresionesAritmeticasASM {
             String expresionFormateada = formatearExpresion(expresionAritmetica);
 
             // Mostrar la expresión formateada en la consola
-            System.out.println("\nExpresión Aritmética (formateada): " + expresionFormateada + "\n");
+            System.out.println("\nExpresión Aritmética: " + expresionFormateada + "\n");
 
             // Validar la expresión
             if (!esExpresionValida(expresionAritmetica)) {
@@ -98,21 +98,20 @@ public class ExpresionesAritmeticasASM {
 
             // Resultado calculado en Java
             double resultadoNumerico = valoresVariables.get(variableIzquierda);
-            System.out.println("\n - Resultado numérico calculado: " + String.format("%.3f", resultadoNumerico) + "\n");
 
-            // Definir la cadena que representará el resultado en ASM (si negativo,
-            // anteponemos '-')
+            // Mostrar el resultado numérico en consola con punto decimal
+            System.out.println("\n - Resultado: " + variableIzquierda + " = "
+                    + String.format(Locale.US, "%.3f", resultadoNumerico) + "\n");
+
+            // Definir la cadena que representará el resultado en ASM con punto decimal
             String resultadoFinalJava = (resultadoNumerico < 0)
-                    ? "-" + String.format("%.3f", Math.abs(resultadoNumerico))
-                    : String.format("%.3f", resultadoNumerico);
-
-            // Verificar si es negativo
-            boolean esNegativo = (resultadoNumerico < 0);
+                    ? "-" + String.format(Locale.US, "%.3f", Math.abs(resultadoNumerico))
+                    : String.format(Locale.US, "%.3f", resultadoNumerico);
 
             // Generar el archivo ASM
             try {
                 generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava,
-                        esNegativo, expresionFormateada);
+                        expresionFormateada);
                 System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
             } catch (IOException e) {
                 System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
@@ -244,7 +243,7 @@ public class ExpresionesAritmeticasASM {
         Map<String, Double> map = new HashMap<>();
         for (String var : variables) {
             while (true) {
-                System.out.print(" * Ingrese el valor para la variable '" + var + "': ");
+                System.out.print(" * Ingrese el valor de '" + var + "': ");
                 String entrada = scanner.next();
                 try {
                     double val = Double.parseDouble(entrada);
@@ -386,36 +385,31 @@ public class ExpresionesAritmeticasASM {
         return sb.toString();
     }
 
-    // ---------------------------------------------------------------------------------
-    // GENERACIÓN DEL ARCHIVO ASM (OFUSCADO)
-    // ---------------------------------------------------------------------------------
-
-    /**
-     * Genera el archivo "Resultado.ASM" con:
-     * - Declaración de variables (parte entera, parte decimal).
-     * - Etiquetas y buffers con nombres aleatorios.
-     * - Lógica ofuscada para imprimir resultados.
-     */
     private static void generarArchivoASM(
             List<String> instruccionesASM,
             Map<String, Double> valoresVariables,
             String variableIzquierda,
             String resultadoFinalJava,
-            boolean esNegativo,
             String expresionFormateada) throws IOException {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
             // Etiquetas y nombres de buffers random
-            String labelCasoNoNeg = generarNombreAleatorio("L_", NOMBRE_RANDOM_LEN);
-            String labelCasoNeg = generarNombreAleatorio("B_", NOMBRE_RANDOM_LEN);
             String bufferTitulo = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferEntero = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferPunto = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferDecimal = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
+            String bufferExpresion = generarNombreAleatorio("EXP_", NOMBRE_RANDOM_LEN);
+            String bufferSigno = generarNombreAleatorio("SIGN_", NOMBRE_RANDOM_LEN);
+            String bufferEntero = generarNombreAleatorio("ENT_", NOMBRE_RANDOM_LEN);
+            String bufferPunto = generarNombreAleatorio("PNT_", NOMBRE_RANDOM_LEN);
+            String bufferDecimal = generarNombreAleatorio("DEC_", NOMBRE_RANDOM_LEN);
             String finPrograma = generarNombreAleatorio("END_", NOMBRE_RANDOM_LEN);
 
-            // Dummy variable para resultado negativo
-            String varNegativo = generarNombreAleatorio("DUM_", NOMBRE_RANDOM_LEN);
-            String bufferExpresion = generarNombreAleatorio("EXP_", NOMBRE_RANDOM_LEN);
+            // Separar las partes del resultado
+            char signo = resultadoFinalJava.charAt(0) == '-' ? '-' : '+';
+            String[] partes = resultadoFinalJava.replace("-", "").split("\\.");
+            String parteEntera = partes[0];
+            String parteDecimal = partes.length > 1 ? partes[1] : "000";
+
+            // Convertir parte entera y decimal a formato hexadecimal
+            String parteEnteraHex = convertirCadenaAHexadecimal(parteEntera);
+            String parteDecimalHex = convertirCadenaAHexadecimal(parteDecimal);
 
             // 1) Encabezado
             agregarEncabezado(writer);
@@ -426,17 +420,12 @@ public class ExpresionesAritmeticasASM {
                         + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
-            // Declarar la expresión aritmética formateada como una cadena
             writer.write("    " + bufferExpresion + " DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
-            writer.write("    " + bufferTitulo + " DB '" + variableIzquierda + " =   $'\n");
-            writer.write("    " + bufferEntero + " DB 5 DUP('$')\n");
-            writer.write("    " + bufferPunto + "  DB '.  $'\n");
-            writer.write("    " + bufferDecimal + " DB 5 DUP('$')\n\n");
-
-            // Solo si es negativo, declaramos la variable disfrazada
-            if (esNegativo) {
-                writer.write("    " + varNegativo + " DB \"" + resultadoFinalJava + "\", '$'\n\n");
-            }
+            writer.write("    " + bufferTitulo + " DB '" + variableIzquierda + " = ', '$'\n");
+            writer.write("    " + bufferSigno + " DB '" + signo + "', '$'\n");
+            writer.write("    " + bufferEntero + " DB " + parteEnteraHex + ", '$'\n");
+            writer.write("    " + bufferPunto + " DB '.', '$'\n");
+            writer.write("    " + bufferDecimal + " DB " + parteDecimalHex + ", '$'\n\n");
 
             // 3) Segmento de código
             agregarSegmentoCodigoInicio(writer);
@@ -444,96 +433,58 @@ public class ExpresionesAritmeticasASM {
             // Imprimir la expresión aritmética
             writer.write("    LEA DX, " + bufferExpresion + "\n");
             writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n\n");
+            writer.write("    INT 21h\n");
 
-            // 5) Instrucciones generadas
+            // 4) Generar las instrucciones ASM
             for (String instruccion : instruccionesASM) {
                 // Reemplazar el punto por un punto y coma en los valores numéricos
                 String instruccionModificada = instruccion.replaceAll("(\\d+)\\.(\\d+)", "$1;$2");
                 writer.write("    " + instruccionModificada + "\n");
             }
 
-            // 6) Según esNegativo, generamos un label para la parte de impresión
-            if (!esNegativo) {
-                // NO NEGATIVO
-                writer.write(labelCasoNoNeg + ":\n");
-                writer.write("    MOV AX, AX ; NEUTRAL OP\n");
+            // 5) Imprimir el resultado desde las partes separadas
+            writer.write("    LEA DX, " + bufferTitulo + "\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                writer.write("    MOV AX, " + variableIzquierda + "\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + bufferEntero + "\n");
-                writer.write("    MOV BX, 10\n");
-                writer.write("\nLOOP_1:\n");
-                writer.write("    XOR DX, DX\n");
-                writer.write("    DIV BX\n");
-                writer.write("    ADD DL, '0'\n");
-                writer.write("    DEC DI\n");
-                writer.write("    MOV [DI], DL\n");
-                writer.write("    DEC CX\n");
-                writer.write("    TEST AX, AX\n");
-                writer.write("    JNZ LOOP_1\n\n");
+            writer.write("    LEA DX, " + bufferSigno + "\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Imprime el "var ="
-                writer.write("    LEA DX, " + bufferTitulo + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n");
+            writer.write("    LEA DX, " + bufferEntero + "\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Imprime parte entera
-                writer.write("    LEA DX, " + bufferEntero + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+            writer.write("    LEA DX, " + bufferPunto + "\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Parte decimal
-                writer.write("    MOV AX, " + variableIzquierda + "_D\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + bufferDecimal + "\n");
-                writer.write("    MOV BX, 10\n");
-                writer.write("\nLOOP_2:\n");
-                writer.write("    XOR DX, DX\n");
-                writer.write("    DIV BX\n");
-                writer.write("    ADD DL, '0'\n");
-                writer.write("    DEC DI\n");
-                writer.write("    MOV [DI], DL\n");
-                writer.write("    DEC CX\n");
-                writer.write("    TEST AX, AX\n");
-                writer.write("    JNZ LOOP_2\n\n");
+            writer.write("    LEA DX, " + bufferDecimal + "\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Imprime el punto
-                writer.write("    LEA DX, " + bufferPunto + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n");
-
-                // Imprime decimales
-                writer.write("    LEA DX, " + bufferDecimal + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
-
-            } else {
-                // CASO NEGATIVO
-                writer.write(labelCasoNeg + ":\n");
-
-                writer.write("    MOV AX, " + variableIzquierda + "\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + bufferEntero + "\n");
-                writer.write("    MOV BX, 10\n");
-
-                // Imprime el "var ="
-                writer.write("    LEA DX, " + bufferTitulo + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n");
-
-                // Imprimimos la variable ofuscada
-                writer.write("    LEA DX, " + varNegativo + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
-            }
-
-            // 7) Fin de programa
+            // 6) Fin del programa
             writer.write(finPrograma + ":\n");
             writer.write("    MOV AH, 4Ch\n");
             writer.write("    INT 21h\n");
             writer.write("END start\n");
         }
+    }
+
+    /**
+     * Convierte una cadena de caracteres en su representación hexadecimal separada
+     * por comas.
+     */
+    private static String convertirCadenaAHexadecimal(String cadena) {
+        StringBuilder hex = new StringBuilder();
+        for (char c : cadena.toCharArray()) {
+            hex.append(String.format("%02Xh,", (int) c));
+        }
+        // Eliminar la última coma
+        if (hex.length() > 0) {
+            hex.setLength(hex.length() - 1);
+        }
+        return hex.toString();
     }
 
     // ---------------------------------------------------------------------------------
