@@ -1,3 +1,4 @@
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -52,8 +53,11 @@ public class ExpresionesAritmeticasASM {
                 return;
             }
 
-            // Mostrar la expresión en consola
-            System.out.println("\nExpresión Aritmética (en minúsculas): " + expresionAritmetica + "\n");
+            // Formatear la expresión para mostrarla con espacios
+            String expresionFormateada = formatearExpresion(expresionAritmetica);
+
+            // Mostrar la expresión formateada en la consola
+            System.out.println("\nExpresión Aritmética (formateada): " + expresionFormateada + "\n");
 
             // Validar la expresión
             if (!esExpresionValida(expresionAritmetica)) {
@@ -108,7 +112,7 @@ public class ExpresionesAritmeticasASM {
             // Generar el archivo ASM
             try {
                 generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava,
-                        esNegativo, expresionAritmetica);
+                        esNegativo, expresionFormateada);
                 System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
             } catch (IOException e) {
                 System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
@@ -117,6 +121,17 @@ public class ExpresionesAritmeticasASM {
             // Salir del bucle si todo es válido y se procesa correctamente
             break;
         }
+    }
+
+    /**
+     * Formatea la expresión aritmética para agregar espacios alrededor de
+     * operadores
+     * y asegurar que los paréntesis externos tengan un espacio.
+     */
+    private static String formatearExpresion(String expresion) {
+        // Agregar espacios alrededor de los operadores
+        expresion = expresion.replaceAll("(?<=[^\\s+\\-*/=])([+\\-*/=])(?=[^\\s+\\-*/=])", " $1 ");
+        return expresion.trim();
     }
 
     // ---------------------------------------------------------------------------------
@@ -145,11 +160,11 @@ public class ExpresionesAritmeticasASM {
             return false; // Falla si el paréntesis no tiene un operador antes
         }
 
-        // Verificar que no haya números seguidos de '(' sin operador (p.ej. 5(3+2))
-        Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
-        Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
-        if (matcherNumeroSinOperador.find()) {
-            return false; // Falla si un número va inmediatamente seguido de '('
+        // Verificar que no haya números seguidos de identificadores (p.ej. 6x)
+        Pattern numeroSeguidoIdentificador = Pattern.compile("\\d+[a-zA-Z_]");
+        Matcher matcherNumeroSeguidoIdentificador = numeroSeguidoIdentificador.matcher(expresion);
+        if (matcherNumeroSeguidoIdentificador.find()) {
+            return false; // Falla si un número va inmediatamente seguido de un identificador
         }
 
         // Verificar que haya exactamente un '='
@@ -387,7 +402,7 @@ public class ExpresionesAritmeticasASM {
             String variableIzquierda,
             String resultadoFinalJava,
             boolean esNegativo,
-            String expresionAritmetica) throws IOException {
+            String expresionFormateada) throws IOException {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
             // Etiquetas y nombres de buffers random
             String labelCasoNoNeg = generarNombreAleatorio("L_", NOMBRE_RANDOM_LEN);
@@ -411,8 +426,8 @@ public class ExpresionesAritmeticasASM {
                         + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
-            // Declarar la expresión aritmética como una cadena
-            writer.write("    " + bufferExpresion + " DB '" + expresionAritmetica + "', 0Dh, 0Ah, '$'\n");
+            // Declarar la expresión aritmética formateada como una cadena
+            writer.write("    " + bufferExpresion + " DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
             writer.write("    " + bufferTitulo + " DB '" + variableIzquierda + " =   $'\n");
             writer.write("    " + bufferEntero + " DB 5 DUP('$')\n");
             writer.write("    " + bufferPunto + "  DB '.  $'\n");
