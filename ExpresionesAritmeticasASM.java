@@ -206,6 +206,26 @@ public class ExpresionesAritmeticasASM {
                 return false; // Falla si hay más ')' que '('
             }
         }
+
+        // Verificar que no haya variables internas como T1, T1_D, etc.
+        Pattern variablesInternas = Pattern.compile("\\bT\\d+(_D)?\\b", Pattern.CASE_INSENSITIVE);
+        Matcher matcherVariablesInternas = variablesInternas.matcher(expresion);
+        if (matcherVariablesInternas.find()) {
+            return false; // Falla si encuentra variables internas
+        }
+
+        // Verificar que no se usen palabras reservadas
+        String[] palabrasReservadas = { "ExpresionAritmetica", "Resultado", "Signo", "Enteros", "Punto", "Decimales",
+                "start" };
+        for (String palabraReservada : palabrasReservadas) {
+            Pattern patronReservada = Pattern.compile("\\b" + Pattern.quote(palabraReservada) + "\\b",
+                    Pattern.CASE_INSENSITIVE);
+            Matcher matcherReservada = patronReservada.matcher(expresion);
+            if (matcherReservada.find()) {
+                return false; // Falla si encuentra una palabra reservada
+            }
+        }
+
         // Si llega aquí, la expresión es válida
         return contadorParentesis == 0;
     }
@@ -439,10 +459,6 @@ public class ExpresionesAritmeticasASM {
             String parteEntera = partes[0];
             String parteDecimal = partes.length > 1 ? partes[1] : "000";
 
-            // Convertir parte entera y decimal a formato hexadecimal
-            String parteEnteraHex = convertirCadenaADecimal(parteEntera);
-            String parteDecimalHex = convertirCadenaADecimal(parteDecimal);
-
             // 1) Encabezado
             agregarEncabezado(writer);
 
@@ -467,11 +483,11 @@ public class ExpresionesAritmeticasASM {
             }
 
             writer.write("\n    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
-            writer.write("    Resultado DB '" + variableIzquierda + " = ', '$'\n");
-            writer.write("    Signo DB '" + Signo + "', '$'\n");
-            writer.write("    Enteros DB " + parteEnteraHex + ", 5 DUP('$')\n");
+            writer.write("    Resultado DB '" + variableIzquierda + " = ', 5 DUP('$')\n");
+            writer.write("    Signo DB " + convertirCadenaADecimal(String.valueOf(Signo)) + ", '$'\n");
+            writer.write("    Enteros DB " + convertirCadenaADecimal(parteEntera) + ", 5 DUP('$')\n");
             writer.write("    Punto DB '.', '$'\n");
-            writer.write("    Decimales DB " + parteDecimalHex + ", 5 DUP('$')\n\n");
+            writer.write("    Decimales DB " + convertirCadenaADecimal(parteDecimal) + ", 5 DUP('$')\n\n");
 
             // 3) Segmento de código
             agregarSegmentoCodigoInicio(writer);
@@ -490,12 +506,13 @@ public class ExpresionesAritmeticasASM {
             }
 
             // Imprimir el resultado desde las partes separadas
+            writer.write("\n    ;Imprimir resultado\n");
             writer.write("    LEA DX, Resultado\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
             // Conversión de la parte entera
-            writer.write("\n    ;Conversión de '" + variableIzquierda + "' a texto (Enteros)\n");
+            writer.write("    ;Conversión de '" + variableIzquierda + "' a texto (Enteros)\n");
             writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
             writer.write("    LEA DI, " + variableIzquierda + "\n");
