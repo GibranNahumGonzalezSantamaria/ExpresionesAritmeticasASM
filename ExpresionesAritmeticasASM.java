@@ -1,3 +1,4 @@
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,8 +17,9 @@ public class ExpresionesAritmeticasASM {
     // ---------------------------------------------------------------------------------
     // PROPIEDADES
     // ---------------------------------------------------------------------------------
-    private static int temporalCounter = 1; // Contador para variables temporales
-    private static final int NOMBRE_RANDOM_LEN = 5; // Tamaño por defecto para nombres random
+    private static int temporalCounter = 1;
+    // Tamaño por defecto para nombres random
+    // Contador para variables temporales
 
     // ---------------------------------------------------------------------------------
     // MÉTODO PRINCIPAL
@@ -43,20 +45,23 @@ public class ExpresionesAritmeticasASM {
             }
 
             // Cargar la expresión del archivo (sin espacios)
-            String expresionAritmetica;
+            String ExpresionAritmetica;
             try {
                 String contenido = new String(Files.readAllBytes(Paths.get(selectedFile.getAbsolutePath())));
-                expresionAritmetica = contenido.replaceAll("\\s+", "").toLowerCase(); // Convertir a minúsculas
+                ExpresionAritmetica = contenido.replaceAll("\\s+", "").toLowerCase(); // Convertir a minúsculas
             } catch (IOException e) {
                 System.err.println("Error al leer el archivo: " + e.getMessage());
                 return;
             }
 
-            // Mostrar la expresión en consola
-            System.out.println("\nExpresión Aritmética (en minúsculas): " + expresionAritmetica + "\n");
+            // Formatear la expresión para mostrarla con espacios
+            String expresionFormateada = formatearExpresion(ExpresionAritmetica);
+
+            // Mostrar la expresión formateada en la consola
+            System.out.println("\nExpresión Aritmética: " + expresionFormateada + "\n");
 
             // Validar la expresión
-            if (!esExpresionValida(expresionAritmetica)) {
+            if (!esExpresionValida(ExpresionAritmetica)) {
                 System.err.println(
                         "La expresión es inválida (operadores consecutivos, paréntesis mal, etc.). Por favor, seleccione un nuevo archivo.");
                 continue;
@@ -64,8 +69,8 @@ public class ExpresionesAritmeticasASM {
 
             // Si la expresión es válida, continuar con el procesamiento
             // Identificar variable izquierda y el resto de variables
-            String variableIzquierda = identificarVariableIzquierda(expresionAritmetica);
-            Set<String> variables = identificarVariables(expresionAritmetica);
+            String variableIzquierda = identificarVariableIzquierda(ExpresionAritmetica);
+            Set<String> variables = identificarVariables(ExpresionAritmetica);
             variables.remove(variableIzquierda);
 
             // Pedir valores de las variables
@@ -74,7 +79,7 @@ public class ExpresionesAritmeticasASM {
             scanner.close();
 
             // Reemplazar las variables en la expresión con su propio nombre
-            String input = expresionAritmetica;
+            String input = ExpresionAritmetica;
             for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
                 input = input.replaceAll("\\b" + Pattern.quote(entry.getKey()) + "\\b", entry.getKey());
             }
@@ -94,20 +99,20 @@ public class ExpresionesAritmeticasASM {
 
             // Resultado calculado en Java
             double resultadoNumerico = valoresVariables.get(variableIzquierda);
-            System.out.println("\n - Resultado numérico calculado: " + String.format("%.3f", resultadoNumerico) + "\n");
 
-            // Definir la cadena que representará el resultado en ASM (si negativo, anteponemos '-')
+            // Mostrar el resultado numérico en consola con Punto decimal
+            System.out.println("\n - Resultado: " + variableIzquierda + " = "
+                    + String.format(Locale.US, "%.3f", resultadoNumerico) + "\n");
+
+            // Definir la cadena que representará el resultado en ASM con Punto decimal
             String resultadoFinalJava = (resultadoNumerico < 0)
-                    ? "-" + String.format("%.3f", Math.abs(resultadoNumerico))
-                    : String.format("%.3f", resultadoNumerico);
-
-            // Verificar si es negativo
-            boolean esNegativo = (resultadoNumerico < 0);
+                    ? "-" + String.format(Locale.US, "%.3f", Math.abs(resultadoNumerico))
+                    : String.format(Locale.US, "%.3f", resultadoNumerico);
 
             // Generar el archivo ASM
             try {
                 generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava,
-                        esNegativo, expresionAritmetica);
+                        expresionFormateada);
                 System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
             } catch (IOException e) {
                 System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
@@ -116,6 +121,17 @@ public class ExpresionesAritmeticasASM {
             // Salir del bucle si todo es válido y se procesa correctamente
             break;
         }
+    }
+
+    /**
+     * Formatea la expresión aritmética para agregar espacios alrededor de
+     * operadores
+     * y asegurar que los paréntesis externos tengan un espacio.
+     */
+    private static String formatearExpresion(String expresion) {
+        // Agregar espacios alrededor de los operadores
+        expresion = expresion.replaceAll("(?<=[^\\s+\\-*/=])([+\\-*/=])(?=[^\\s+\\-*/=])", " $1 ");
+        return expresion.trim();
     }
 
     // ---------------------------------------------------------------------------------
@@ -144,11 +160,11 @@ public class ExpresionesAritmeticasASM {
             return false; // Falla si el paréntesis no tiene un operador antes
         }
 
-        // Verificar que no haya números seguidos de '(' sin operador (p.ej. 5(3+2))
-        Pattern numeroSinOperador = Pattern.compile("\\d+\\(");
-        Matcher matcherNumeroSinOperador = numeroSinOperador.matcher(expresion);
-        if (matcherNumeroSinOperador.find()) {
-            return false; // Falla si un número va inmediatamente seguido de '('
+        // Verificar que no haya números seguidos de identificadores (p.ej. 6x)
+        Pattern numeroSeguidoIdentificador = Pattern.compile("\\d+[a-zA-Z_]");
+        Matcher matcherNumeroSeguidoIdentificador = numeroSeguidoIdentificador.matcher(expresion);
+        if (matcherNumeroSeguidoIdentificador.find()) {
+            return false; // Falla si un número va inmediatamente seguido de un identificador
         }
 
         // Verificar que haya exactamente un '='
@@ -190,12 +206,8 @@ public class ExpresionesAritmeticasASM {
                 return false; // Falla si hay más ')' que '('
             }
         }
-        if (contadorParentesis != 0) {
-            return false; // Falla si no hay balance total
-        }
-
         // Si llega aquí, la expresión es válida
-        return true;
+        return contadorParentesis == 0;
     }
 
     /**
@@ -228,7 +240,7 @@ public class ExpresionesAritmeticasASM {
         Map<String, Double> map = new HashMap<>();
         for (String var : variables) {
             while (true) {
-                System.out.print(" * Ingrese el valor para la variable '" + var + "': ");
+                System.out.print(" * Ingrese el valor de '" + var + "': ");
                 String entrada = scanner.next();
                 try {
                     double val = Double.parseDouble(entrada);
@@ -250,10 +262,8 @@ public class ExpresionesAritmeticasASM {
             List<String> temporales,
             List<String> instruccionesASM,
             Map<String, Double> valoresVariables) {
-
-        // Jerarquía de operadores (orden de análisis)
         String[] operadoresJerarquia = { "\\(", "\\*", "/", "\\+", "-", "=" };
-        String[] nombresOperadores   = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
+        String[] nombresOperadores = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
 
         // Primero procesamos paréntesis de manera recursiva
         Pattern patParentesis = Pattern.compile("\\(([^()]+)\\)");
@@ -266,13 +276,9 @@ public class ExpresionesAritmeticasASM {
 
         // Luego iteramos operadores en orden
         for (int i = 1; i < operadoresJerarquia.length; i++) {
-            // --------------------------------------------------------------------------------
-            // Se agregó '-?' para reconocer negativos, p.ej. -1, -2.5, etc.
-            // --------------------------------------------------------------------------------
             String regex = String.format(
-                "([a-zA-Z_][a-zA-Z0-9_]*|-?\\d+(\\.\\d+)?|T\\d+)%s([a-zA-Z_][a-zA-Z0-9_]*|-?\\d+(\\.\\d+)?|T\\d+)",
-                operadoresJerarquia[i]
-            );
+                    "([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)%s([a-zA-Z_][a-zA-Z0-9_]*|\\d+(\\.\\d+)?|T\\d+)",
+                    operadoresJerarquia[i]);
 
             Pattern patOp = Pattern.compile(regex);
             Matcher m;
@@ -329,46 +335,90 @@ public class ExpresionesAritmeticasASM {
         };
     }
 
-    /**
-     * Genera la instrucción ASM para un operador específico y dos operandos.
-     * Se agrega alguna instrucción "neutra" (like XOR AX,AX) para ofuscar.
-     */
+    private static String procesarOperando(String operando) {
+        // Caso: Variable, temporal o identificador
+        if (operando.matches("[a-zA-Z_][a-zA-Z0-9_]*|T\\d+")) {
+            return operando + "_D"; // Agregar sufijo "_D"
+        }
+
+        // Caso: Número entero
+        if (operando.matches("\\d+")) {
+            return "000"; // Reemplazar números enteros por tres ceros
+        }
+
+        // Caso: Número decimal
+        // (solo verificamos que sea "algo.algo" y devolvemos la parte de después del
+        // '.')
+        if (operando.matches("\\d+.\\d+")) {
+            String[] partes = operando.split("\\.");
+            // Nos quedamos directamente con la parte decimal, sin relanzar excepción
+            return partes[1];
+        }
+
+        // Por defecto, devolver el operando tal cual (nunca debería llegar aquí)
+        return operando;
+    }
+
     private static String generarInstruccionASM(String operador, String op1, String op2, String tempVar) {
         StringBuilder sb = new StringBuilder();
 
-        // Ofuscación: insertar instrucción neutra
-        sb.append("\n    XOR AX, AX ; Ofuscación (instrucción neutra)\n");
-        sb.append("    MOV AX, AX ; Aún más redundancia\n");
-
         switch (operador) {
             case "MUL" -> {
+                sb.append("\n    ;Multiplicación\n");
                 sb.append(String.format("    MOV AX, %s", op1)).append("\n");
                 sb.append(String.format("    MOV BX, %s", op2)).append("\n");
                 sb.append("    CWD\n");
                 sb.append("    IMUL BX\n");
-                sb.append(String.format("    MOV %s, AX", tempVar));
+                sb.append(String.format("    MOV %s, AX", tempVar)).append("\n");
+                sb.append("    ;Multiplicación_D\n");
+                sb.append(String.format("    MOV AX, %s", procesarOperando(op1))).append("\n");
+                sb.append(String.format("    MOV BX, %s", procesarOperando(op2))).append("\n");
+                sb.append("    CWD\n");
+                sb.append("    IMUL BX\n");
+                sb.append(String.format("    MOV %s_D, AX", tempVar));
             }
             case "DIV" -> {
+                sb.append("\n    ;División\n");
                 sb.append(String.format("    MOV AX, %s", op1)).append("\n");
                 sb.append("    XOR DX, DX\n");
                 sb.append(String.format("    MOV BX, %s", op2)).append("\n");
                 sb.append("    CWD\n");
                 sb.append("    IDIV BX\n");
-                sb.append(String.format("    MOV %s, AX", tempVar));
+                sb.append(String.format("    MOV %s, AX", tempVar)).append("\n");
+                sb.append("    ;División_D\n");
+                sb.append(String.format("    MOV AX, %s", procesarOperando(op1))).append("\n");
+                sb.append(String.format("    MOV BX, %s", procesarOperando(op2))).append("\n");
+                sb.append("    CWD\n");
+                sb.append("    IDIV BX\n");
+                sb.append(String.format("    MOV %s_D, AX", tempVar));
             }
             case "ADD" -> {
+                sb.append("\n    ;Suma\n");
                 sb.append(String.format("    MOV AX, %s", op1)).append("\n");
                 sb.append(String.format("    ADD AX, %s", op2)).append("\n");
-                sb.append(String.format("    MOV %s, AX", tempVar));
+                sb.append(String.format("    MOV %s, AX", tempVar)).append("\n");
+                sb.append("    ;Suma_D\n");
+                sb.append(String.format("    MOV AX, %s", procesarOperando(op1))).append("\n");
+                sb.append(String.format("    ADD AX, %s", procesarOperando(op2))).append("\n");
+                sb.append(String.format("    MOV %s_D, AX", tempVar));
             }
             case "SUB" -> {
+                sb.append("\n    ;Resta\n");
                 sb.append(String.format("    MOV AX, %s", op1)).append("\n");
                 sb.append(String.format("    SUB AX, %s", op2)).append("\n");
-                sb.append(String.format("    MOV %s, AX", tempVar));
+                sb.append(String.format("    MOV %s, AX", tempVar)).append("\n");
+                sb.append("    ;Resta_D\n");
+                sb.append(String.format("    MOV AX, %s", procesarOperando(op1))).append("\n");
+                sb.append(String.format("    SUB AX, %s", procesarOperando(op2))).append("\n");
+                sb.append(String.format("    MOV %s_D, AX", tempVar));
             }
             case "MOV" -> {
+                sb.append("\n    ;Asignación\n");
                 sb.append(String.format("    MOV AX, %s", op2)).append("\n");
-                sb.append(String.format("    MOV %s, AX", op1));
+                sb.append(String.format("    MOV %s, AX", op1)).append("\n");
+                sb.append("    ;Asignación_D\n");
+                sb.append(String.format("    MOV AX, %s", procesarOperando(op2))).append("\n");
+                sb.append(String.format("    MOV %s, AX", procesarOperando(op1)));
             }
             default -> throw new IllegalArgumentException("Operador no soportado: " + operador);
         }
@@ -376,37 +426,22 @@ public class ExpresionesAritmeticasASM {
         return sb.toString();
     }
 
-    // ---------------------------------------------------------------------------------
-    // GENERACIÓN DEL ARCHIVO ASM (OFUSCADO)
-    // ---------------------------------------------------------------------------------
-
-    /**
-     * Genera el archivo "Resultado.ASM" con:
-     * - Declaración de variables (parte entera, parte decimal).
-     * - Etiquetas y buffers con nombres aleatorios.
-     * - Lógica ofuscada para imprimir resultados.
-     */
     private static void generarArchivoASM(
             List<String> instruccionesASM,
             Map<String, Double> valoresVariables,
             String variableIzquierda,
             String resultadoFinalJava,
-            boolean esNegativo,
-            String expresionAritmetica) throws IOException {
-
+            String expresionFormateada) throws IOException {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
-            // Etiquetas y nombres de buffers random
-            String labelCasoNoNeg = generarNombreAleatorio("L_", NOMBRE_RANDOM_LEN);
-            String labelCasoNeg   = generarNombreAleatorio("B_", NOMBRE_RANDOM_LEN);
-            String bufferTitulo   = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferEntero   = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferPunto    = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String bufferDecimal  = generarNombreAleatorio("BUF_", NOMBRE_RANDOM_LEN);
-            String finPrograma    = generarNombreAleatorio("END_", NOMBRE_RANDOM_LEN);
+            // Separar las partes del resultado
+            char Signo = resultadoFinalJava.charAt(0) == '-' ? '-' : '+';
+            String[] partes = resultadoFinalJava.replace("-", "").split("\\.");
+            String parteEntera = partes[0];
+            String parteDecimal = partes.length > 1 ? partes[1] : "000";
 
-            // Dummy variable para resultado negativo
-            String varNegativo    = generarNombreAleatorio("DUM_", NOMBRE_RANDOM_LEN);
-            String bufferExpresion= generarNombreAleatorio("EXP_", NOMBRE_RANDOM_LEN);
+            // Convertir parte entera y decimal a formato hexadecimal
+            String parteEnteraHex = convertirCadenaAHexadecimal(parteEntera);
+            String parteDecimalHex = convertirCadenaAHexadecimal(parteDecimal);
 
             // 1) Encabezado
             agregarEncabezado(writer);
@@ -417,137 +452,107 @@ public class ExpresionesAritmeticasASM {
                         + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
             }
 
-            // Declarar la expresión aritmética como una cadena
-            writer.write("    " + bufferExpresion + " DB '" + expresionAritmetica + "', 0Dh, 0Ah, '$'\n");
-            writer.write("    " + bufferTitulo + " DB '" + variableIzquierda + " =   $'\n");
-            writer.write("    " + bufferEntero + " DB 5 DUP('$')\n");
-            writer.write("    " + bufferPunto + " DB '.','$'\n");
-            // Se usan 5 bytes para el buffer decimal, pero imprimiremos forzosamente 3 dígitos
-            writer.write("    " + bufferDecimal + " DB 5 DUP('$')\n\n");
-
-            // Solo si es negativo, declaramos la variable disfrazada (el string con el valor ya formateado)
-            if (esNegativo) {
-                writer.write("    " + varNegativo + " DB \"" + resultadoFinalJava + "\", '$'\n\n");
-            }
+            writer.write("    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
+            writer.write("    Resultado DB '" + variableIzquierda + " = ', '$'\n");
+            writer.write("    Signo DB '" + Signo + "', '$'\n");
+            writer.write("    Enteros DB " + parteEnteraHex + ", '$'\n");
+            writer.write("    Punto DB '.', '$'\n");
+            writer.write("    Decimales DB " + parteDecimalHex + ", '$'\n\n");
 
             // 3) Segmento de código
             agregarSegmentoCodigoInicio(writer);
 
             // Imprimir la expresión aritmética
-            writer.write("    LEA DX, " + bufferExpresion + "\n");
+            writer.write("    LEA DX, ExpresionAritmetica\n");
             writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n\n");
+            writer.write("    INT 21h\n");
 
-            // 5) Instrucciones generadas
+            // 4) Generar las instrucciones ASM
             for (String instruccion : instruccionesASM) {
-                // Reemplazar el punto por un punto y coma en los valores numéricos (ofuscación opcional)
+                // Reemplazar el Punto por un Punto y coma en los valores numéricos
                 String instruccionModificada = instruccion.replaceAll("(\\d+)\\.(\\d+)", "$1;$2");
                 writer.write("    " + instruccionModificada + "\n");
             }
 
-            // 6) Según esNegativo, generamos un label para la parte de impresión
-            if (!esNegativo) {
-                // NO NEGATIVO
-                writer.write(labelCasoNoNeg + ":\n");
-                writer.write("    MOV AX, AX ; NEUTRAL OP\n");
+            // Conversión de la parte entera
+            writer.write("\n    ;Conversión de '" + variableIzquierda + "' a texto (Enteros)\n");
+            writer.write("    MOV AX, " + variableIzquierda + "\n");
+            writer.write("    MOV CX, 5\n");
+            writer.write("    LEA DI, " + variableIzquierda + "\n");
+            writer.write("    MOV BX, 10\n");
+            writer.write("\n    LOOP_Enteros:\n");
+            writer.write("        XOR DX, DX\n");
+            writer.write("        DIV BX\n");
+            writer.write("        ADD DL, '0'\n");
+            writer.write("        DEC DI\n");
+            writer.write("        MOV [DI], DL\n");
+            writer.write("        DEC CX\n");
+            writer.write("        TEST AX, AX\n");
+            writer.write("        JNZ LOOP_Enteros\n\n");
 
-                // --- Parte ENTERA ---
-                writer.write("    MOV AX, " + variableIzquierda + "\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + bufferEntero + "\n");
-                writer.write("    MOV BX, 10\n");
-                writer.write("\nLOOP_1:\n");
-                writer.write("    XOR DX, DX\n");
-                writer.write("    DIV BX\n");
-                writer.write("    ADD DL, '0'\n");
-                writer.write("    DEC DI\n");
-                writer.write("    MOV [DI], DL\n");
-                writer.write("    DEC CX\n");
-                writer.write("    TEST AX, AX\n");
-                writer.write("    JNZ LOOP_1\n\n");
+            // Conversión de la parte decimal
+            writer.write("    ;Conversión de '" + variableIzquierda + "_D' a texto (Decimales)\n");
+            writer.write("    MOV AX, " + variableIzquierda + "_D\n");
+            writer.write("    MOV CX, 5\n");
+            writer.write("    LEA DI, " + variableIzquierda + "_D\n");
+            writer.write("    MOV BX, 10\n");
+            writer.write("\n    LOOP_Decimales:\n");
+            writer.write("        XOR DX, DX\n");
+            writer.write("        DIV BX\n");
+            writer.write("        ADD DL, '0'\n");
+            writer.write("        DEC DI\n");
+            writer.write("        MOV [DI], DL\n");
+            writer.write("        DEC CX\n");
+            writer.write("        TEST AX, AX\n");
+            writer.write("        JNZ LOOP_Decimales\n\n");
 
-                // Imprime el "var ="
-                writer.write("    LEA DX, " + bufferTitulo + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n");
+            // 5) Imprimir el resultado desde las partes separadas
+            writer.write("    LEA DX, Resultado\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Imprime parte entera
-                writer.write("    LEA DX, " + bufferEntero + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+            writer.write("    LEA DX, Signo\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // --- Parte DECIMAL (forzar 3 dígitos) ---
-                writer.write("    MOV AX, " + variableIzquierda + "_D\n");
-                // Usamos 3 iteraciones para tener exactamente 3 dígitos decimales
-                writer.write("    MOV CX, 3\n");
-                // Apuntamos al final del bufferDecimal para ir llenando hacia atrás
-                writer.write("    LEA DI, " + bufferDecimal + " + 3\n");
-                writer.write("    MOV BX, 10\n");
-                writer.write("\nLOOP_2:\n");
-                writer.write("    XOR DX, DX\n");
-                writer.write("    DIV BX\n");
-                writer.write("    ADD DL, '0'\n");
-                writer.write("    DEC DI\n");
-                writer.write("    MOV [DI], DL\n");
-                // Usamos LOOP para forzar exactamente 3 iteraciones
-                writer.write("    LOOP LOOP_2\n\n");
+            writer.write("    LEA DX, Enteros\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Imprime el punto
-                writer.write("    LEA DX, " + bufferPunto + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n");
+            writer.write("    LEA DX, Punto\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-                // Imprime decimales
-                writer.write("    LEA DX, " + bufferDecimal + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+            writer.write("    LEA DX, Decimales\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
-            } else {
-                // CASO NEGATIVO
-                writer.write(labelCasoNeg + ":\n");
-
-                // (Si es negativo, usamos la cadena ofuscada que tiene el signo y los 3 decimales listos)
-                writer.write("    MOV AX, " + variableIzquierda + "\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + bufferEntero + "\n");
-                writer.write("    MOV BX, 10\n");
-
-                // Imprime el "var ="
-                writer.write("    LEA DX, " + bufferTitulo + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n");
-
-                // Imprimimos la variable ofuscada (incluye signo y decimales)
-                writer.write("    LEA DX, " + varNegativo + "\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
-            }
-
-            // 7) Fin de programa
-            writer.write(finPrograma + ":\n");
+            // 6) Fin del programa
             writer.write("    MOV AH, 4Ch\n");
             writer.write("    INT 21h\n");
             writer.write("END start\n");
         }
     }
 
+    /**
+     * Convierte una cadena de caracteres en su representación hexadecimal separada
+     * por comas.
+     */
+    private static String convertirCadenaAHexadecimal(String cadena) {
+        StringBuilder hex = new StringBuilder();
+        for (char c : cadena.toCharArray()) {
+            hex.append(String.format("%02Xh,", (int) c));
+        }
+        // Eliminar la última coma
+        if (hex.length() > 0) {
+            hex.setLength(hex.length() - 1);
+        }
+        return hex.toString();
+    }
+
     // ---------------------------------------------------------------------------------
     // MÉTODOS AUXILIARES
     // ---------------------------------------------------------------------------------
-
-    /**
-     * Genera un nombre aleatorio usando letras mayúsculas y dígitos, con un
-     * prefijo.
-     */
-    private static String generarNombreAleatorio(String prefijo, int longitud) {
-        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder nombre = new StringBuilder(prefijo);
-        Random random = new Random();
-        for (int i = 0; i < longitud; i++) {
-            nombre.append(caracteres.charAt(random.nextInt(caracteres.length())));
-        }
-        return nombre.toString();
-    }
 
     /**
      * Agrega el encabezado .MODEL, .STACK, etc. al FileWriter.
@@ -569,15 +574,15 @@ public class ExpresionesAritmeticasASM {
     }
 
     /**
-     * Convierte un valor double a la parte entera y decimal (cada uno DW).
-     * Incluye "carry" si la parte decimal redondeada llega a 1000.
+     * Convierten valor double a la parte entera y decimal (DW).
+     * Incluye el "carry" si la parte decimal redondeada llega a 1000.
      */
     private static String convertirValorASM(String variable, double valor) {
         int parteEntera = (int) valor;
         double decimal = valor - parteEntera;
         decimal = Math.abs(decimal);
 
-        int parteDecimal = (int) Math.round(decimal * 1000); // 3 decimales
+        int parteDecimal = (int) Math.round(decimal * 1000);
         if (parteDecimal == 1000) {
             parteEntera += (valor >= 0) ? 1 : -1;
             parteDecimal = 0;
@@ -589,7 +594,7 @@ public class ExpresionesAritmeticasASM {
         sb.append("\n    ");
         sb.append(variable).append("_D DW ");
         sb.append(String.format("%03d", parteDecimal)); // segunda DW (parte decimal)
-        sb.append(" ; decimales\n");
+        sb.append(" ;Decimales de '").append(variable).append("'\n");
         return sb.toString();
     }
 }
