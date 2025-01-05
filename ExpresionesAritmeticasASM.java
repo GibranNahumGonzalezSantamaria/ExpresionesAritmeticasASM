@@ -440,29 +440,44 @@ public class ExpresionesAritmeticasASM {
             String parteDecimal = partes.length > 1 ? partes[1] : "000";
 
             // Convertir parte entera y decimal a formato hexadecimal
-            String parteEnteraHex = convertirCadenaAHexadecimal(parteEntera);
-            String parteDecimalHex = convertirCadenaAHexadecimal(parteDecimal);
+            String parteEnteraHex = convertirCadenaADecimal(parteEntera);
+            String parteDecimalHex = convertirCadenaADecimal(parteDecimal);
 
             // 1) Encabezado
             agregarEncabezado(writer);
 
             // 2) Declarar variables en .DATA
-            for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
-                writer.write("    " + entry.getKey() + " DW "
-                        + convertirValorASM(entry.getKey(), entry.getValue()) + "\n");
+            if (variableIzquierda != null) {
+                writer.write("    " + variableIzquierda + " DW ?\n");
+                writer.write("    " + variableIzquierda + "_D DW ? ;Decimales de '" + variableIzquierda + "'\n\n");
             }
 
-            writer.write("    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
+            for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
+                String declaracion = convertirValorASM(entry.getKey(), entry.getValue(), variableIzquierda);
+                if (!declaracion.isEmpty()) {
+                    writer.write("    " + declaracion);
+                }
+            }
+
+            writer.write("\n");
+
+            for (int i = 1; i < temporalCounter; i++) {
+                writer.write("    T" + i + " DW ?\n");
+                writer.write("    T" + i + "_D DW ? ;Decimales de 'T" + i + "'\n");
+            }
+
+            writer.write("\n    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
             writer.write("    Resultado DB '" + variableIzquierda + " = ', '$'\n");
             writer.write("    Signo DB '" + Signo + "', '$'\n");
-            writer.write("    Enteros DB " + parteEnteraHex + ", '$'\n");
+            writer.write("    Enteros DB " + parteEnteraHex + ", 5 DUP('$')\n");
             writer.write("    Punto DB '.', '$'\n");
-            writer.write("    Decimales DB " + parteDecimalHex + ", '$'\n\n");
+            writer.write("    Decimales DB " + parteDecimalHex + ", 5 DUP('$')\n\n");
 
             // 3) Segmento de código
             agregarSegmentoCodigoInicio(writer);
 
             // Imprimir la expresión aritmética
+            writer.write("    ;Imprimir Expresión Aritmetica\n");
             writer.write("    LEA DX, ExpresionAritmetica\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n");
@@ -473,6 +488,11 @@ public class ExpresionesAritmeticasASM {
                 String instruccionModificada = instruccion.replaceAll("(\\d+)\\.(\\d+)", "$1;$2");
                 writer.write("    " + instruccionModificada + "\n");
             }
+
+            // Imprimir el resultado desde las partes separadas
+            writer.write("    LEA DX, Resultado\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
 
             // Conversión de la parte entera
             writer.write("\n    ;Conversión de '" + variableIzquierda + "' a texto (Enteros)\n");
@@ -490,6 +510,18 @@ public class ExpresionesAritmeticasASM {
             writer.write("        TEST AX, AX\n");
             writer.write("        JNZ LOOP_Enteros\n\n");
 
+            // Imprimir el signo
+            writer.write("    ;Imprimir signo\n");
+            writer.write("    LEA DX, Signo\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
+
+            // Imprimir la parte entera
+            writer.write("    ;Imprimir parte entera\n");
+            writer.write("    LEA DX, Enteros\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
+
             // Conversión de la parte decimal
             writer.write("    ;Conversión de '" + variableIzquierda + "_D' a texto (Decimales)\n");
             writer.write("    MOV AX, " + variableIzquierda + "_D\n");
@@ -506,23 +538,14 @@ public class ExpresionesAritmeticasASM {
             writer.write("        TEST AX, AX\n");
             writer.write("        JNZ LOOP_Decimales\n\n");
 
-            // 5) Imprimir el resultado desde las partes separadas
-            writer.write("    LEA DX, Resultado\n");
-            writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n\n");
-
-            writer.write("    LEA DX, Signo\n");
-            writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n\n");
-
-            writer.write("    LEA DX, Enteros\n");
-            writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n\n");
-
+            // Imprimir el punto
+            writer.write("    ;Imprimir punto\n");
             writer.write("    LEA DX, Punto\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
+            // Imprimir la parte decimal
+            writer.write("    ;Imprimir parte decimal\n");
             writer.write("    LEA DX, Decimales\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
@@ -535,19 +558,22 @@ public class ExpresionesAritmeticasASM {
     }
 
     /**
-     * Convierte una cadena de caracteres en su representación hexadecimal separada
-     * por comas.
+     * Convierte una cadena de caracteres en su representación decimal separada por
+     * comas.
+     *
+     * @param cadena La cadena de entrada a convertir.
+     * @return Una cadena con los valores decimales ASCII separados por comas.
      */
-    private static String convertirCadenaAHexadecimal(String cadena) {
-        StringBuilder hex = new StringBuilder();
+    private static String convertirCadenaADecimal(String cadena) {
+        StringBuilder decimal = new StringBuilder();
         for (char c : cadena.toCharArray()) {
-            hex.append(String.format("%02Xh,", (int) c));
+            decimal.append(String.format("%d,", (int) c));
         }
         // Eliminar la última coma
-        if (hex.length() > 0) {
-            hex.setLength(hex.length() - 1);
+        if (decimal.length() > 0) {
+            decimal.setLength(decimal.length() - 1);
         }
-        return hex.toString();
+        return decimal.toString();
     }
 
     // ---------------------------------------------------------------------------------
@@ -574,27 +600,36 @@ public class ExpresionesAritmeticasASM {
     }
 
     /**
-     * Convierten valor double a la parte entera y decimal (DW).
-     * Incluye el "carry" si la parte decimal redondeada llega a 1000.
+     * Convierte un valor double a una representación adecuada en ASM, excluyendo
+     * temporales y la variable izquierda.
+     *
+     * @param variable          Nombre de la variable (se omitirán temporales y la
+     *                          variable izquierda).
+     * @param valor             Valor numérico asociado a la variable.
+     * @param variableIzquierda La variable izquierda que debe ser omitida.
+     * @return Una cadena formateada con las declaraciones ASM correspondientes,
+     *         o una cadena vacía si la variable debe ser omitida.
      */
-    private static String convertirValorASM(String variable, double valor) {
-        int parteEntera = (int) valor;
-        double decimal = valor - parteEntera;
-        decimal = Math.abs(decimal);
-
-        int parteDecimal = (int) Math.round(decimal * 1000);
-        if (parteDecimal == 1000) {
-            parteEntera += (valor >= 0) ? 1 : -1;
-            parteDecimal = 0;
+    private static String convertirValorASM(String variable, double valor, String variableIzquierda) {
+        // Omitir temporales (prefijos "T") y la variable izquierda
+        if (variable.startsWith("T") || variable.equalsIgnoreCase(variableIzquierda)) {
+            return ""; // No generar nada para temporales o la variable izquierda
         }
 
-        // Formatear
+        // Convertir el valor a una cadena con formato explícito usando Locale.US
+        String resultado = String.format(Locale.US, "%.3f", valor);
+        String[] partes = resultado.split("\\."); // Separar parte entera y decimal por el punto
+
+        // Convertir las partes a enteros para su procesamiento
+        int parteEntera = Integer.parseInt(partes[0]);
+        int parteDecimal = Integer.parseInt(partes[1]); // Tomar todos los tres dígitos decimales
+
+        // Generar salida en formato ASM
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%03d", parteEntera)); // primera DW (parte entera)
-        sb.append("\n    ");
-        sb.append(variable).append("_D DW ");
-        sb.append(String.format("%03d", parteDecimal)); // segunda DW (parte decimal)
+        sb.append(variable).append(" DW ").append(parteEntera).append("\n");
+        sb.append("    ").append(variable).append("_D DW ").append(String.format("%03d", parteDecimal));
         sb.append(" ;Decimales de '").append(variable).append("'\n");
+
         return sb.toString();
     }
 }
