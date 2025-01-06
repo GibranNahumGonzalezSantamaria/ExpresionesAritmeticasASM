@@ -328,7 +328,14 @@ public class ExpresionesAritmeticasASM {
                 double r = calcularResultado(v1, v2, nombresOperadores[i]);
                 valoresVariables.put(tempVar, r);
 
-                String operacion = String.format("    %s -> %s, %s, %s", tempVar, op1, op2, nombresOperadores[i]);
+                // Calcula el resultado de la operación
+                double resultadoTemporal = calcularResultado(v1, v2, nombresOperadores[i]);
+                
+                // Almacena el valor calculado para el temporal en el mapa
+                valoresVariables.put(tempVar, resultadoTemporal);
+                
+                // Incluye el valor del temporal en la operación
+                String operacion = String.format("    %s -> %s, %s, %s = %.3f", tempVar, op1, op2, nombresOperadores[i], resultadoTemporal);
                 temporales.add(operacion);
 
                 String asm = generarInstruccionASM(nombresOperadores[i], op1, op2, tempVar);
