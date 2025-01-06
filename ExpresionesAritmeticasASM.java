@@ -512,7 +512,31 @@ public class ExpresionesAritmeticasASM {
                 sb.append(String.format("    MOV %s_D, AX", tempVar));
             }
             case "MOV" -> {
-                sb.append("\n    ;Asignación\n");
+                sb.append("\n    ;Ajuste de decimales\n");
+                sb.append(String.format("    MOV AX, %s", procesarOperando(op2))).append("\n");
+                sb.append("    CMP AX, 1000\n");
+                sb.append("    JL Ajuste_Menor\n");
+
+                sb.append("    ;Ajuste mayor\n");
+                sb.append("    SUB AX, 1000\n");
+                sb.append(String.format("    MOV %s, AX", procesarOperando(op2))).append("\n");
+                sb.append(String.format("    MOV AX, %s", op2)).append("\n");
+                sb.append("    INC AX ;").append(op2).append("++\n");
+                sb.append(String.format("    MOV %s, AX", op2)).append("\n");
+                sb.append("    JMP Fin_Ajuste\n");
+
+                sb.append("    Ajuste_Menor:\n");
+                sb.append(String.format("    CMP AX, 0\n"));
+                sb.append("    JGE Fin_Ajuste\n");
+                sb.append("    ADD AX, 1000\n");
+                sb.append(String.format("    MOV %s, AX", procesarOperando(op2))).append("\n");
+                sb.append(String.format("    MOV AX, %s", op2)).append("\n");
+                sb.append("    DEC AX ;").append(op2).append("--\n");
+                sb.append(String.format("    MOV %s, AX", op2)).append("\n");
+
+                sb.append("    Fin_Ajuste:\n\n");
+
+                sb.append("    ;Asignación\n");
                 sb.append(String.format("    MOV AX, %s", op2)).append("\n");
                 sb.append(String.format("    MOV %s, AX", op1)).append("\n");
                 sb.append("    ;Asignación_D\n");
@@ -628,13 +652,30 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    " + instruccionModificada + "\n");
             }
 
-            // Instrucciones para imprimir el resultado
+            // Imprimir el resultado desde las partes separadas
             writer.write("\n    ;Imprimir resultado\n");
             writer.write("    LEA DX, Resultado\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
-            // Conversión de la parte entera a texto
+            // Determinar el signo de la variable
+            writer.write("    ;Determinar el signo de '" + variableIzquierda + "'\n");
+            writer.write("    MOV AX, " + variableIzquierda + "\n");
+            writer.write("    CMP AX, 0\n");
+            writer.write("    JL Negativo\n");
+            writer.write("    MOV BYTE PTR " + variableIzquierda + ", '+'\n");
+            writer.write("    JMP FIN_Signo\n");
+            writer.write("    Negativo:\n");
+            writer.write("    MOV BYTE PTR " + variableIzquierda + ", '-'\n");
+            writer.write("    FIN_Signo:\n\n");
+
+            // Imprimir el signo
+            writer.write("    ;Imprimir signo\n");
+            writer.write("    LEA DX, Signo\n");
+            writer.write("    MOV AH, 09h\n");
+            writer.write("    INT 21h\n\n");
+
+            // Conversión de la parte entera
             writer.write("    ;Conversión de '" + variableIzquierda + "' a texto (Enteros)\n");
             writer.write("    MOV AX, " + variableIzquierda + "\n");
             writer.write("    MOV CX, 5\n");
@@ -651,19 +692,13 @@ public class ExpresionesAritmeticasASM {
             writer.write("        TEST AX, AX\n");
             writer.write("        JNZ LOOP_Enteros\n\n");
 
-            // Instrucciones para imprimir el signo
-            writer.write("    ;Imprimir signo\n");
-            writer.write("    LEA DX, Signo\n");
-            writer.write("    MOV AH, 09h\n");
-            writer.write("    INT 21h\n\n");
-
-            // Instrucciones para imprimir la parte entera
+            // Imprimir la parte entera
             writer.write("    ;Imprimir parte entera\n");
             writer.write("    LEA DX, Enteros\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
-            // Conversión de la parte decimal a texto
+            // Conversión de la parte decimal
             writer.write("    ;Conversión de '" + variableIzquierda + "_D' a texto (Decimales)\n");
             writer.write("    MOV AX, " + variableIzquierda + "_D\n");
             writer.write("    MOV CX, 5\n");
@@ -680,13 +715,13 @@ public class ExpresionesAritmeticasASM {
             writer.write("        TEST AX, AX\n");
             writer.write("        JNZ LOOP_Decimales\n\n");
 
-            // Instrucciones para imprimir el punto decimal
+            // Imprimir el punto
             writer.write("    ;Imprimir punto\n");
             writer.write("    LEA DX, Punto\n");
             writer.write("    MOV AH, 09h\n");
             writer.write("    INT 21h\n\n");
 
-            // Instrucciones para imprimir la parte decimal
+            // Imprimir la parte decimal
             writer.write("    ;Imprimir parte decimal\n");
             writer.write("    LEA DX, Decimales\n");
             writer.write("    MOV AH, 09h\n");
