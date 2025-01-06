@@ -107,6 +107,11 @@ public class ExpresionesAritmeticasASM {
                     ? "-" + String.format(Locale.US, "%.3f", Math.abs(resultadoNumerico))
                     : String.format(Locale.US, "%.3f", resultadoNumerico);
 
+            // Verificar si el resultado es un valor numérico válido
+            if (Double.isNaN(resultadoNumerico) || Double.isInfinite(resultadoNumerico)) {
+                resultadoNumerico = 0.0; // Asignar 0.0 si no es un número válido
+            }
+
             // Generar el archivo ASM con las instrucciones y variables procesadas
             try {
                 generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, variables_neg,
