@@ -57,8 +57,11 @@ public class ExpresionesAritmeticasASM {
             // Formatear la expresión para mostrarla con espacios
             String expresionFormateada = formatearExpresion(ExpresionAritmetica);
 
-            // Mostrar la expresión formateada en la consola
-            System.out.println("\nExpresión Aritmética: " + expresionFormateada + "\n");
+            // Eliminar los signos negativos de variables como "(-a)"
+            ExpresionAritmetica = ExpresionAritmetica.replaceAll("\\(-([a-zA-Z_][a-zA-Z0-9_]*)\\)", "$1");
+
+            // Mostrar la expresión original en la consola
+            System.out.println("\nExpresión Aritmética Original: " + expresionFormateada + "\n");
 
             // Validar la expresión
             if (!esExpresionValida(ExpresionAritmetica)) {
@@ -245,13 +248,22 @@ public class ExpresionesAritmeticasASM {
 
     /**
      * Identifica todas las variables dentro de la expresión (a-z, 0-9 y '_').
+     * En el caso de expresiones como "(-a)", se elimina el signo negativo para
+     * evitar errores.
      */
     private static Set<String> identificarVariables(String expresion) {
         Set<String> vars = new HashSet<>();
-        Matcher m = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*").matcher(expresion);
+        Matcher m = Pattern.compile("\\(-([a-zA-Z_][a-zA-Z0-9_]*)\\)").matcher(expresion);
+        while (m.find()) {
+            vars.add(m.group(1)); // Agregar solo el nombre de la variable sin el signo negativo
+        }
+
+        // Buscar también variables que no estén precedidas por "(-)"
+        m = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*").matcher(expresion);
         while (m.find()) {
             vars.add(m.group());
         }
+
         return vars;
     }
 
