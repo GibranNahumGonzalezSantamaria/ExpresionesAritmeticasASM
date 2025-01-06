@@ -13,8 +13,10 @@ import javax.swing.JFileChooser;
 public class ExpresionesAritmeticasASM {
     // ---------------------------------------------------------------------------------
     // PROPIEDADES
+    // ---------------------------------------------------------------------------------
     private static int temporalCounter = 1;
     // Contador para variables temporales
+
     // ---------------------------------------------------------------------------------
     // MÉTODO PRINCIPAL
     // ---------------------------------------------------------------------------------
@@ -63,6 +65,7 @@ public class ExpresionesAritmeticasASM {
                         "La expresión es inválida (operadores consecutivos, paréntesis mal, etc.). Por favor, seleccione un nuevo archivo.");
                 continue;
             }
+
             // Identificar la variable de asignación y las variables utilizadas en la expresión
             String variableIzquierda = identificarVariableIzquierda(ExpresionAritmetica);
             Set<String> variables = identificarVariables(ExpresionAritmetica);
@@ -121,7 +124,7 @@ public class ExpresionesAritmeticasASM {
             // Salir del bucle tras procesar correctamente la expresión
             break;
         }
-     }
+        }
         /**
          * Formatea la expresión aritmética agregando espacios alrededor de los operadores
          * y asegurando una correcta visualización.
@@ -137,7 +140,6 @@ public class ExpresionesAritmeticasASM {
 
             return expresion.trim();
         }
-
         // ---------------------------------------------------------------------------------
         // VALIDACIÓN DE LA EXPRESIÓN
         // ---------------------------------------------------------------------------------
@@ -432,85 +434,81 @@ public class ExpresionesAritmeticasASM {
 
             switch (operador) {
                 case "MUL" -> {
-                    sb.append("\n    ;Multiplicación\n");
-                    sb.append(String.format("    MOV AX, %s\n", op1));
-                    sb.append(String.format("    MOV BX, %s\n", op2));
-                    sb.append("    CWD\n");
-                    sb.append("    IMUL BX\n");
-                    sb.append(String.format("    MOV %s, AX\n", tempVar));
-                    sb.append("    ;Multiplicación_D\n");
-                    sb.append(String.format("    MOV AX, %s\n", procesarOperando(op1)));
-                    sb.append(String.format("    MOV BX, %s\n", procesarOperando(op2)));
-                    sb.append("    CWD\n");
-                    sb.append("    IMUL BX\n");
-                    sb.append(String.format("    MOV %s_D, AX", tempVar));
+                    sb.append("\n    ;Multiplicación\n")
+                      .append(String.format("    MOV AX, %s\n", op1))
+                      .append(String.format("    MOV BX, %s\n", op2))
+                      .append("    CWD\n")
+                      .append("    IMUL BX\n")
+                      .append(String.format("    MOV %s, AX\n", tempVar))
+                      .append("    ;Multiplicación_D\n")
+                      .append(String.format("    MOV AX, %s\n", procesarOperando(op1)))
+                      .append(String.format("    MOV BX, %s\n", procesarOperando(op2)))
+                      .append("    CWD\n")
+                      .append("    IMUL BX\n")
+                      .append(String.format("    MOV %s_D, AX", tempVar));
                 }
                 case "DIV" -> {
-                    sb.append("\n    ;División\n");
-                    sb.append(String.format("    MOV AX, %s\n", op1));
-                    sb.append("    XOR DX, DX\n");
-                    sb.append(String.format("    MOV BX, %s\n", op2));
-                    sb.append("    CWD\n");
-                    sb.append("    IDIV BX\n");
-                    sb.append(String.format("    MOV %s, AX\n", tempVar));
-                    sb.append("    ;División_D\n");
-                    sb.append(String.format("    MOV AX, %s\n", procesarOperando(op1)));
-                    sb.append(String.format("    MOV BX, %s\n", procesarOperando(op2)));
-                    sb.append("    CWD\n");
-                    sb.append("    IDIV BX\n");
-                    sb.append(String.format("    MOV %s_D, AX", tempVar));
+                    sb.append("\n    ;División\n")
+                      .append(String.format("    MOV AX, %s\n", op1))
+                      .append("    XOR DX, DX\n")
+                      .append(String.format("    MOV BX, %s\n", op2))
+                      .append("    CWD\n")
+                      .append("    IDIV BX\n")
+                      .append(String.format("    MOV %s, AX\n", tempVar))
+                      .append("    ;División_D\n")
+                      .append(String.format("    MOV AX, %s\n", procesarOperando(op1)))
+                      .append(String.format("    MOV BX, %s\n", procesarOperando(op2)))
+                      .append("    CWD\n")
+                      .append("    IDIV BX\n")
+                      .append(String.format("    MOV %s_D, AX", tempVar));
                 }
                 case "ADD" -> {
-                    sb.append("\n    ;Suma\n");
-                    sb.append(String.format("    MOV AX, %s\n", op1));
-                    sb.append(String.format("    ADD AX, %s\n", op2));
-                    sb.append(String.format("    MOV %s, AX\n", tempVar));
-                    sb.append("    ;Suma_D\n");
-                    sb.append(String.format("    MOV AX, %s\n", procesarOperando(op1)));
-                    sb.append(String.format("    ADD AX, %s\n", procesarOperando(op2)));
-                    sb.append(String.format("    MOV %s_D, AX", tempVar));
+                    sb.append("\n    ;Suma\n")
+                      .append(String.format("    MOV AX, %s\n", op1))
+                      .append(String.format("    ADD AX, %s\n", op2))
+                      .append(String.format("    MOV %s, AX\n", tempVar))
+                      .append("    ;Suma_D\n")
+                      .append(String.format("    MOV AX, %s\n", procesarOperando(op1)))
+                      .append(String.format("    ADD AX, %s\n", procesarOperando(op2)))
+                      .append(String.format("    MOV %s_D, AX", tempVar));
                 }
                 case "SUB" -> {
-                    sb.append("\n    ;Resta\n");
-                    sb.append(String.format("    MOV AX, %s\n", op1));
-                    sb.append(String.format("    SUB AX, %s\n", op2));
-                    sb.append(String.format("    MOV %s, AX\n", tempVar));
-                    sb.append("    ;Resta_D\n");
-                    sb.append(String.format("    MOV AX, %s\n", procesarOperando(op1)));
-                    sb.append(String.format("    SUB AX, %s\n", procesarOperando(op2)));
-                    sb.append(String.format("    MOV %s_D, AX", tempVar));
+                    sb.append("\n    ;Resta\n")
+                      .append(String.format("    MOV AX, %s\n", op1))
+                      .append(String.format("    SUB AX, %s\n", op2))
+                      .append(String.format("    MOV %s, AX\n", tempVar))
+                      .append("    ;Resta_D\n")
+                      .append(String.format("    MOV AX, %s\n", procesarOperando(op1)))
+                      .append(String.format("    SUB AX, %s\n", procesarOperando(op2)))
+                      .append(String.format("    MOV %s_D, AX", tempVar));
                 }
                 case "MOV" -> {
-                    sb.append("\n    ;Ajuste de decimales\n");
-                    sb.append(String.format("    MOV AX, %s\n", procesarOperando(op2)));
-                    sb.append("    CMP AX, 1000\n");
-                    sb.append("    JL Ajuste_Menor\n");
-
-                    sb.append("    ;Ajuste mayor\n");
-                    sb.append("    SUB AX, 1000\n");
-                    sb.append(String.format("    MOV %s, AX\n", procesarOperando(op2)));
-                    sb.append(String.format("    MOV AX, %s\n", op2));
-                    sb.append(String.format("    INC AX ;%s++\n", op2));
-                    sb.append(String.format("    MOV %s, AX\n", op2));
-                    sb.append("    JMP Fin_Ajuste\n");
-
-                    sb.append("    Ajuste_Menor:\n");
-                    sb.append(String.format("    CMP AX, 0\n"));
-                    sb.append("    JGE Fin_Ajuste\n");
-                    sb.append(String.format("    ADD AX, 1000\n"));
-                    sb.append(String.format("    MOV %s, AX\n", procesarOperando(op2)));
-                    sb.append(String.format("    MOV AX, %s\n", op2));
-                    sb.append(String.format("    DEC AX ;%s--\n", op2));
-                    sb.append(String.format("    MOV %s, AX\n", op2));
-
-                    sb.append("    Fin_Ajuste:\n\n");
-
-                    sb.append("    ;Asignación\n");
-                    sb.append(String.format("    MOV AX, %s\n", op2));
-                    sb.append(String.format("    MOV %s, AX\n", op1));
-                    sb.append("    ;Asignación_D\n");
-                    sb.append(String.format("    MOV AX, %s\n", procesarOperando(op2)));
-                    sb.append(String.format("    MOV %s, AX", procesarOperando(op1)));
+                    sb.append("\n    ;Ajuste de decimales\n")
+                      .append(String.format("    MOV AX, %s\n", procesarOperando(op2)))
+                      .append("    CMP AX, 1000\n")
+                      .append("    JL Ajuste_Menor\n\n")
+                      .append("    ;Ajuste mayor\n")
+                      .append("    SUB AX, 1000\n")
+                      .append(String.format("    MOV %s, AX\n", procesarOperando(op2)))
+                      .append(String.format("    MOV AX, %s\n", op2))
+                      .append(String.format("    INC AX ;%s++\n", op2))
+                      .append(String.format("    MOV %s, AX\n", op2))
+                      .append("    JMP Fin_Ajuste\n\n")
+                      .append("    Ajuste_Menor:\n")
+                      .append(String.format("    CMP AX, 0\n"))
+                      .append("    JGE Fin_Ajuste\n")
+                      .append(String.format("    ADD AX, 1000\n"))
+                      .append(String.format("    MOV %s, AX\n", procesarOperando(op2)))
+                      .append(String.format("    MOV AX, %s\n", op2))
+                      .append(String.format("    DEC AX ;%s--\n", op2))
+                      .append(String.format("    MOV %s, AX\n", op2))
+                      .append("\n    Fin_Ajuste:\n\n")
+                      .append("    ;Asignación\n")
+                      .append(String.format("    MOV AX, %s\n", op2))
+                      .append(String.format("    MOV %s, AX\n", op1))
+                      .append("    ;Asignación_D\n")
+                      .append(String.format("    MOV AX, %s\n", procesarOperando(op2)))
+                      .append(String.format("    MOV %s, AX", procesarOperando(op1)));
                 }
                 default -> throw new IllegalArgumentException("Operador no soportado: " + operador);
             }
@@ -536,6 +534,8 @@ public class ExpresionesAritmeticasASM {
                 String resultadoFinalJava,
                 String expresionFormateada) throws IOException {
             try (FileWriter writer = new FileWriter("Resultado.ASM")) {
+                StringBuilder sb = new StringBuilder();
+
                 // Separar las partes del resultado
                 char Signo = resultadoFinalJava.charAt(0) == '-' ? '-' : '+';
                 String[] partes = resultadoFinalJava.replace("-", "").split("\\.");
@@ -543,31 +543,34 @@ public class ExpresionesAritmeticasASM {
                 String parteDecimal = partes.length > 1 ? partes[1] : "000";
 
                 // 1) Encabezado del archivo ASM
-                agregarEncabezado(writer);
+                sb.append(".MODEL SMALL\n")
+                  .append(".STACK 100h\n\n")
+                  .append(".DATA\n");
 
                 // 2) Declarar la variable principal y sus decimales
                 if (variableIzquierda != null) {
-                    writer.write("    " + variableIzquierda + " DW ?\n");
-                    writer.write("    " + variableIzquierda + "_D DW ?\n\n");
+                    sb.append("    ").append(variableIzquierda).append(" DW ?\n")
+                      .append("    ").append(variableIzquierda).append("_D DW ?\n\n");
                 }
 
                 // Declarar las demás variables con sus valores
                 for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
                     String declaracion = convertirValorASM(entry.getKey(), entry.getValue(), variableIzquierda);
                     if (!declaracion.isEmpty()) {
-                        writer.write("    " + declaracion);
+                        sb.append("    ").append(declaracion);
                     }
                 }
 
-                writer.write("\n");
+                sb.append("\n");
 
                 // Declarar variables temporales
                 for (int i = 1; i < temporalCounter; i++) {
-                    writer.write("    T" + i + " DW ?\n");
-                    writer.write("    T" + i + "_D DW ?\n");
+                    sb.append("    T").append(i).append(" DW ?\n")
+                      .append("    T").append(i).append("_D DW ?\n");
                 }
 
-                writer.write("\n    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
+                sb.append("\n    ExpresionAritmetica DB '").append(expresionFormateada)
+                  .append("', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
 
                 // Declarar las variables con sus valores para imprimir (excluyendo temporales y variableIzquierda)
                 for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
@@ -581,135 +584,144 @@ public class ExpresionesAritmeticasASM {
                         }
 
                         String valorFormateado = String.format(Locale.US, "%.3f", valor);
-                        writer.write("    " + nombreVariable + "_T DB '  " + nombreVariable + " = " + valorFormateado
-                                + "', 0Dh, 0Ah, '$'\n");
+                        sb.append("    ").append(nombreVariable).append("_T DB '  ")
+                          .append(nombreVariable).append(" = ").append(valorFormateado)
+                          .append("', 0Dh, 0Ah, '$'\n");
                     }
                 }
 
-                writer.write("    Resultado DB 0Dh, 0Ah, '" + variableIzquierda + " = ', '$'\n");
-                writer.write("    Signo DB " + convertirCadenaADecimal(String.valueOf(Signo)) + ", 5 DUP('$')\n");
-                writer.write("    Enteros DB " + convertirCadenaADecimal(parteEntera) + ", 5 DUP('$')\n");
-                writer.write("    Punto DB '.', '$'\n");
-                writer.write("    Decimales DB " + convertirCadenaADecimal(parteDecimal) + ", 5 DUP('$')\n\n");
+                sb.append("    Resultado DB 0Dh, 0Ah, '").append(variableIzquierda)
+                  .append(" = ', '$'\n")
+                  .append("    Signo DB ").append(convertirCadenaADecimal(String.valueOf(Signo)))
+                  .append(", 5 DUP('$')\n")
+                  .append("    Enteros DB ").append(convertirCadenaADecimal(parteEntera))
+                  .append(", 5 DUP('$')\n")
+                  .append("    Punto DB '.', '$'\n")
+                  .append("    Decimales DB ").append(convertirCadenaADecimal(parteDecimal))
+                  .append(", 5 DUP('$')\n\n");
 
                 // 3) Segmento de código
-                agregarSegmentoCodigoInicio(writer);
+                sb.append(".CODE\n")
+                  .append("start:\n")
+                  .append("    MOV AX, @DATA\n")
+                  .append("    MOV DS, AX\n\n");
 
                 // Instrucciones para imprimir la expresión aritmética
-                writer.write("    ;Imprimir Expresión Aritmetica\n");
-                writer.write("    LEA DX, ExpresionAritmetica\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+                sb.append("    ;Imprimir Expresión Aritmetica\n")
+                  .append("    LEA DX, ExpresionAritmetica\n")
+                  .append("    MOV AH, 09h\n")
+                  .append("    INT 21h\n\n");
 
                 // Instrucciones para imprimir los valores de las variables
-                writer.write("    ;Imprimir variables\n");
+                sb.append("    ;Imprimir variables\n");
                 for (Map.Entry<String, Double> entry : valoresVariables.entrySet()) {
                     String nombreVariable = entry.getKey();
                     if (!nombreVariable.equals(variableIzquierda) && !nombreVariable.startsWith("T")) {
-                        writer.write("    LEA DX, " + nombreVariable + "_T\n");
-                        writer.write("    MOV AH, 09h\n");
-                        writer.write("    INT 21h\n");
+                        sb.append("    LEA DX, ").append(nombreVariable).append("_T\n")
+                          .append("    MOV AH, 09h\n")
+                          .append("    INT 21h\n");
                     }
                 }
 
                 // 4) Incluir las instrucciones ASM generadas
+                sb.append("\n");
                 for (String instruccion : instruccionesASM) {
                     // Reemplazar el punto por un punto y coma en los valores numéricos
                     String instruccionModificada = instruccion.replaceAll("(\\d+)\\.(\\d+)", "$1;$2");
-                    writer.write("    " + instruccionModificada + "\n");
+                    sb.append("    ").append(instruccionModificada).append("\n");
                 }
 
                 // Imprimir el resultado desde las partes separadas
-                writer.write("\n    ;Imprimir resultado\n");
-                writer.write("    LEA DX, Resultado\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+                sb.append("\n    ;Imprimir resultado\n")
+                  .append("    LEA DX, Resultado\n")
+                  .append("    MOV AH, 09h\n")
+                  .append("    INT 21h\n\n");
 
                 // Determinar el signo de la variable
-                writer.write("    ;Determinar el signo de '" + variableIzquierda + "'\n");
-                writer.write("    MOV AX, " + variableIzquierda + "\n");
-                writer.write("    CMP AX, 0\n");
-                writer.write("    JL Negativo\n");
-                writer.write("    MOV BYTE PTR " + variableIzquierda + ", '+'\n");
-                writer.write("    JMP FIN_Signo\n");
-                writer.write("    Negativo:\n");
-                writer.write("    MOV BYTE PTR " + variableIzquierda + ", '-'\n");
-                writer.write("    FIN_Signo:\n\n");
+                sb.append("    ;Determinar el signo de '").append(variableIzquierda).append("'\n")
+                  .append("    MOV AX, ").append(variableIzquierda).append("\n")
+                  .append("    CMP AX, 0\n")
+                  .append("    JL Negativo\n")
+                  .append("    MOV BYTE PTR ").append(variableIzquierda).append(", '+'\n")
+                  .append("    JMP FIN_Signo\n")
+                  .append("    Negativo:\n")
+                  .append("    MOV BYTE PTR ").append(variableIzquierda).append(", '-'\n")
+                  .append("    FIN_Signo:\n\n");
 
                 // Imprimir el signo
-                writer.write("    ;Imprimir signo\n");
-                writer.write("    LEA DX, Signo\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+                sb.append("    ;Imprimir signo\n")
+                  .append("    LEA DX, Signo\n")
+                  .append("    MOV AH, 09h\n")
+                  .append("    INT 21h\n\n");
 
                 // Conversión de la parte entera
-                writer.write("    ;Conversión de '" + variableIzquierda + "' a texto (Enteros)\n");
-                writer.write("    MOV AX, " + variableIzquierda + "\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + variableIzquierda + "\n");
-                writer.write("    MOV BX, 10\n\n");
-
-                writer.write("    LOOP_Enteros:\n");
-                writer.write("        XOR DX, DX\n");
-                writer.write("        DIV BX\n");
-                writer.write("        ADD DL, '0'\n");
-                writer.write("        DEC DI\n");
-                writer.write("        MOV [DI], DL\n");
-                writer.write("        DEC CX\n");
-                writer.write("        TEST AX, AX\n");
-                writer.write("        JNZ LOOP_Enteros\n\n");
+                sb.append("    ;Conversión de '").append(variableIzquierda).append("' a texto (Enteros)\n")
+                  .append("    MOV AX, ").append(variableIzquierda).append("\n")
+                  .append("    MOV CX, 5\n")
+                  .append("    LEA DI, ").append(variableIzquierda).append("\n")
+                  .append("    MOV BX, 10\n\n")
+                  .append("    LOOP_Enteros:\n")
+                  .append("        XOR DX, DX\n")
+                  .append("        DIV BX\n")
+                  .append("        ADD DL, '0'\n")
+                  .append("        DEC DI\n")
+                  .append("        MOV [DI], DL\n")
+                  .append("        DEC CX\n")
+                  .append("        TEST AX, AX\n")
+                  .append("        JNZ LOOP_Enteros\n\n");
 
                 // Imprimir la parte entera
-                writer.write("    ;Imprimir parte entera\n");
-                writer.write("    LEA DX, Enteros\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+                sb.append("    ;Imprimir parte entera\n")
+                  .append("    LEA DX, Enteros\n")
+                  .append("    MOV AH, 09h\n")
+                  .append("    INT 21h\n\n");
 
                 // Conversión de la parte decimal
-                writer.write("    ;Conversión de '" + variableIzquierda + "_D' a texto (Decimales)\n");
-                writer.write("    MOV AX, " + variableIzquierda + "_D\n");
-                writer.write("    MOV CX, 5\n");
-                writer.write("    LEA DI, " + variableIzquierda + "_D\n");
-                writer.write("    MOV BX, 10\n\n");
-
-                writer.write("    LOOP_Decimales:\n");
-                writer.write("        XOR DX, DX\n");
-                writer.write("        DIV BX\n");
-                writer.write("        ADD DL, '0'\n");
-                writer.write("        DEC DI\n");
-                writer.write("        MOV [DI], DL\n");
-                writer.write("        DEC CX\n");
-                writer.write("        TEST AX, AX\n");
-                writer.write("        JNZ LOOP_Decimales\n\n");
+                sb.append("    ;Conversión de '").append(variableIzquierda).append("_D' a texto (Decimales)\n")
+                  .append("    MOV AX, ").append(variableIzquierda).append("_D\n")
+                  .append("    MOV CX, 5\n")
+                  .append("    LEA DI, ").append(variableIzquierda).append("_D\n")
+                  .append("    MOV BX, 10\n\n")
+                  .append("    LOOP_Decimales:\n")
+                  .append("        XOR DX, DX\n")
+                  .append("        DIV BX\n")
+                  .append("        ADD DL, '0'\n")
+                  .append("        DEC DI\n")
+                  .append("        MOV [DI], DL\n")
+                  .append("        DEC CX\n")
+                  .append("        TEST AX, AX\n")
+                  .append("        JNZ LOOP_Decimales\n\n");
 
                 // Imprimir el punto
-                writer.write("    ;Imprimir punto\n");
-                writer.write("    LEA DX, Punto\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+                sb.append("    ;Imprimir punto\n")
+                  .append("    LEA DX, Punto\n")
+                  .append("    MOV AH, 09h\n")
+                  .append("    INT 21h\n\n");
 
                 // Imprimir la parte decimal
-                writer.write("    ;Imprimir parte decimal\n");
-                writer.write("    LEA DX, Decimales\n");
-                writer.write("    MOV AH, 09h\n");
-                writer.write("    INT 21h\n\n");
+                sb.append("    ;Imprimir parte decimal\n")
+                  .append("    LEA DX, Decimales\n")
+                  .append("    MOV AH, 09h\n")
+                  .append("    INT 21h\n\n");
 
                 // 6) Finalización del programa ASM
-                writer.write("    MOV AH, 4Ch\n");
-                writer.write("    INT 21h\n");
-                writer.write("END start\n");
+                sb.append("    MOV AH, 4Ch\n")
+                  .append("    INT 21h\n")
+                  .append("END start\n");
+
+                // Escribir todo el contenido al archivo de una sola vez
+                writer.write(sb.toString());
             }
         }
         /**
-         * Convierte una cadena de caracteres en su representación decimal separada por comas.
-         *
+         * Convierte una cadena de caracteres en su representación decimal separada por comas
          * @param cadena La cadena de entrada a convertir.
          * @return Una cadena con los valores decimales ASCII separados por comas.
          */
         private static String convertirCadenaADecimal(String cadena) {
             StringBuilder decimal = new StringBuilder();
             for (char c : cadena.toCharArray()) {
-                decimal.append(String.format("%d,", (int) c));
+                decimal.append((int) c).append(",");
             }
             // Eliminar la última coma
             if (decimal.length() > 0) {
@@ -720,29 +732,6 @@ public class ExpresionesAritmeticasASM {
         // ---------------------------------------------------------------------------------
         // MÉTODOS AUXILIARES
         // ---------------------------------------------------------------------------------
-        /**
-         * Agrega el encabezado estándar de un archivo ASM, incluyendo .MODEL y .STACK.
-         *
-         * @param writer El objeto FileWriter para escribir en el archivo ASM.
-         * @throws IOException Si ocurre un error al escribir en el archivo.
-         */
-        private static void agregarEncabezado(FileWriter writer) throws IOException {
-            writer.write(".MODEL SMALL\n");
-            writer.write(".STACK 100h\n\n");
-            writer.write(".DATA\n");
-        }
-        /**
-         * Agrega la sección de código inicial de un archivo ASM, incluyendo la inicialización del segmento de datos.
-         *
-         * @param writer El objeto FileWriter para escribir en el archivo ASM.
-         * @throws IOException Si ocurre un error al escribir en el archivo.
-         */
-        private static void agregarSegmentoCodigoInicio(FileWriter writer) throws IOException {
-            writer.write(".CODE\n");
-            writer.write("start:\n");
-            writer.write("    MOV AX, @DATA\n");
-            writer.write("    MOV DS, AX\n\n");
-        }
         /**
          * Convierte un valor numérico a su representación en ASM, excluyendo temporales y la variable principal.
          * @param variable          Nombre de la variable.
