@@ -73,12 +73,13 @@ public class ExpresionesAritmeticasASM {
             // Si la expresión es válida, continuar con el procesamiento
             // Identificar variable izquierda y el resto de variables
             String variableIzquierda = identificarVariableIzquierda(ExpresionAritmetica);
+            Set<String> variables_neg = identificarVariablesNegativas(expresionFormateada);
             Set<String> variables = identificarVariables(ExpresionAritmetica);
             variables.remove(variableIzquierda);
 
             // Pedir valores de las variables
             Scanner scanner = new Scanner(System.in);
-            Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, scanner);
+            Map<String, Double> valoresVariables = obtenerValoresDeVariables(variables, variables_neg, scanner);
             scanner.close();
 
             // Reemplazar las variables en la expresión con su propio nombre
@@ -253,18 +254,22 @@ public class ExpresionesAritmeticasASM {
      */
     private static Set<String> identificarVariables(String expresion) {
         Set<String> vars = new HashSet<>();
-        Matcher m = Pattern.compile("\\(-([a-zA-Z_][a-zA-Z0-9_]*)\\)").matcher(expresion);
-        while (m.find()) {
-            vars.add(m.group(1)); // Agregar solo el nombre de la variable sin el signo negativo
-        }
-
-        // Buscar también variables que no estén precedidas por "(-)"
-        m = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*").matcher(expresion);
+        Matcher m = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*").matcher(expresion);
         while (m.find()) {
             vars.add(m.group());
         }
 
         return vars;
+    }
+
+    private static Set<String> identificarVariablesNegativas(String expresion) {
+        Set<String> vars_neg = new HashSet<>();
+        Matcher m = Pattern.compile("\\(-([a-zA-Z_][a-zA-Z0-9_]*)\\)").matcher(expresion);
+        while (m.find()) {
+            vars_neg.add(m.group(1)); // Agregar solo el nombre de la variable sin el signo negativo
+        }
+
+        return vars_neg;
     }
 
     // ---------------------------------------------------------------------------------
@@ -273,21 +278,43 @@ public class ExpresionesAritmeticasASM {
     /**
      * Pide al usuario los valores numéricos para cada variable.
      */
-    private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Scanner scanner) {
+    private static Map<String, Double> obtenerValoresDeVariables(Set<String> variables, Set<String> variables_neg,
+            Scanner scanner) {
         Map<String, Double> map = new HashMap<>();
-        for (String var : variables) {
+
+        // Procesar las variables negativas
+        for (String var : variables_neg) {
             while (true) {
                 System.out.print(" * Ingrese el valor de '" + var + "': ");
                 String entrada = scanner.next();
                 try {
                     double val = Double.parseDouble(entrada);
-                    map.put(var, val);
+                    map.put(var, -val); // Asignar el valor negativo
                     break;
                 } catch (NumberFormatException ex) {
                     System.out.println("Error: Solo se permiten números.");
                 }
             }
         }
+
+        // Procesar las variables positivas
+        for (String var : variables) {
+            if (map.containsKey(var))
+                continue; // Omitir esta variable si ya fue asignada como negativa
+
+            while (true) {
+                System.out.print(" * Ingrese el valor de '" + var + "': ");
+                String entrada = scanner.next();
+                try {
+                    double val = Double.parseDouble(entrada);
+                    map.put(var, val); // Asignar el valor positivo
+                    break;
+                } catch (NumberFormatException ex) {
+                    System.out.println("Error: Solo se permiten números.");
+                }
+            }
+        }
+
         return map;
     }
 
