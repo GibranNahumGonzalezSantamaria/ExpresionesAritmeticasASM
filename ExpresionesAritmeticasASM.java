@@ -73,8 +73,8 @@ public class ExpresionesAritmeticasASM {
             // Si la expresión es válida, continuar con el procesamiento
             // Identificar variable izquierda y el resto de variables
             String variableIzquierda = identificarVariableIzquierda(ExpresionAritmetica);
-            Set<String> variables_neg = identificarVariablesNegativas(expresionFormateada);
             Set<String> variables = identificarVariables(ExpresionAritmetica);
+            Set<String> variables_neg = identificarVariablesNegativas(expresionFormateada);
             variables.remove(variableIzquierda);
 
             // Pedir valores de las variables
@@ -115,7 +115,8 @@ public class ExpresionesAritmeticasASM {
 
             // Generar el archivo ASM
             try {
-                generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, resultadoFinalJava,
+                generarArchivoASM(instruccionesASM, valoresVariables, variableIzquierda, variables_neg,
+                        resultadoFinalJava,
                         expresionFormateada);
                 System.out.println(" - Archivo ASM generado exitosamente: Resultado.ASM\n");
             } catch (IOException e) {
@@ -499,6 +500,7 @@ public class ExpresionesAritmeticasASM {
             List<String> instruccionesASM,
             Map<String, Double> valoresVariables,
             String variableIzquierda,
+            Set<String> variables_neg,
             String resultadoFinalJava,
             String expresionFormateada) throws IOException {
         try (FileWriter writer = new FileWriter("Resultado.ASM")) {
@@ -539,6 +541,12 @@ public class ExpresionesAritmeticasASM {
                 String nombreVariable = entry.getKey();
                 if (!nombreVariable.equals(variableIzquierda) && !nombreVariable.startsWith("T")) {
                     double valor = entry.getValue();
+
+                    // Verificar si la variable es negativa
+                    if (variables_neg.contains(nombreVariable)) {
+                        valor *= -1; // Cambiar el signo del valor
+                    }
+
                     String valorFormateado = String.format(Locale.US, "%.3f", valor);
                     writer.write("    " + nombreVariable + "_T DB '  " + nombreVariable + " = " + valorFormateado
                             + "', 0Dh, 0Ah, '$'\n");
