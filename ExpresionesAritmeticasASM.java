@@ -334,10 +334,13 @@ public class ExpresionesAritmeticasASM {
                 // Almacena el valor calculado para el temporal en el mapa
                 valoresVariables.put(tempVar, resultadoTemporal);
                 
+                // Formatea el valor del resultado en el formato 000.000
+                String resultadoFormateado = String.format(Locale.US, "%.3f", resultadoTemporal);
+                
                 // Incluye el valor del temporal en la operación
-                String operacion = String.format("    %s -> %s, %s, %s = %.3f", tempVar, op1, op2, nombresOperadores[i], resultadoTemporal);
+                String operacion = String.format("    %s -> %s, %s, %s = %s", tempVar, op1, op2, nombresOperadores[i], resultadoFormateado);
                 temporales.add(operacion);
-
+                
                 String asm = generarInstruccionASM(nombresOperadores[i], op1, op2, tempVar);
                 instruccionesASM.add(asm);
 
