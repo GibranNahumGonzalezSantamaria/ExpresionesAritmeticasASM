@@ -125,12 +125,17 @@ public class ExpresionesAritmeticasASM {
 
     /**
      * Formatea la expresión aritmética para agregar espacios alrededor de
-     * operadores
-     * y asegurar que los paréntesis externos tengan un espacio.
+     * operadores y asegurar que los paréntesis externos tengan un espacio.
+     * Además, elimina los espacios entre '(' y '-' en expresiones como "(-a)" o
+     * "(-1)".
      */
     private static String formatearExpresion(String expresion) {
         // Agregar espacios alrededor de los operadores
         expresion = expresion.replaceAll("(?<=[^\\s+\\-*/=])([+\\-*/=])(?=[^\\s+\\-*/=])", " $1 ");
+
+        // Eliminar espacios en expresiones del tipo "z=( - a)" o "z=( - 1)"
+        expresion = expresion.replaceAll("\\(\\s*-\\s*", "(-");
+
         return expresion.trim();
     }
 
@@ -330,17 +335,18 @@ public class ExpresionesAritmeticasASM {
 
                 // Calcula el resultado de la operación
                 double resultadoTemporal = calcularResultado(v1, v2, nombresOperadores[i]);
-                
+
                 // Almacena el valor calculado para el temporal en el mapa
                 valoresVariables.put(tempVar, resultadoTemporal);
-                
+
                 // Formatea el valor del resultado en el formato 000.000
                 String resultadoFormateado = String.format(Locale.US, "%.3f", resultadoTemporal);
-                
+
                 // Incluye el valor del temporal en la operación
-                String operacion = String.format("    %s -> %s, %s, %s = %s", tempVar, op1, op2, nombresOperadores[i], resultadoFormateado);
+                String operacion = String.format("    %s -> %s, %s, %s = %s", tempVar, op1, op2, nombresOperadores[i],
+                        resultadoFormateado);
                 temporales.add(operacion);
-                
+
                 String asm = generarInstruccionASM(nombresOperadores[i], op1, op2, tempVar);
                 instruccionesASM.add(asm);
 
