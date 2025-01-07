@@ -117,8 +117,6 @@ public class ExpresionesAritmeticasASM {
             } catch (IOException e) {
                 System.err.println(" - Error al generar el archivo ASM: " + e.getMessage());
             }
-
-            // Salir del bucle tras procesar correctamente la expresión
             break;
         }
      }
@@ -134,10 +132,8 @@ public class ExpresionesAritmeticasASM {
 
             // Eliminar espacios en expresiones del tipo "z=( -a)" o "z=( -1)"
             expresion = expresion.replaceAll("\\(\\s*-\\s*", "(-");
-
             return expresion.trim();
         }
-
         // ---------------------------------------------------------------------------------
         // VALIDACIÓN DE LA EXPRESIÓN
         // ---------------------------------------------------------------------------------
@@ -215,7 +211,6 @@ public class ExpresionesAritmeticasASM {
                     return false;
                 }
             }
-
             return true;
         }
         /**
@@ -238,7 +233,6 @@ public class ExpresionesAritmeticasASM {
             while (m.find()) {
                 vars.add(m.group());
             }
-
             return vars;
         }
         /**
@@ -378,7 +372,6 @@ public class ExpresionesAritmeticasASM {
                     expresion = expresion.replaceFirst(Pattern.quote(m.group(0)), tempVar);
                 }
             }
-
             return expresion;
         }
         /**
@@ -407,7 +400,6 @@ public class ExpresionesAritmeticasASM {
             if (operando.matches("[a-zA-Z_][a-zA-Z0-9_]*|T\\d+")) {
                 return operando + "_D"; // Agregar sufijo "_D"
             }
-
             if (operando.matches("\\-?\\d+\\.\\d+")) { // Número decimal negativo o positivo
                 String[] partes = operando.split("\\.");
                 return partes[1];
@@ -415,7 +407,6 @@ public class ExpresionesAritmeticasASM {
             if (operando.matches("\\-?\\d+")) { // Número entero negativo o positivo
                 return "000"; // Procesar como 000 o similar
             }
-
             // Por defecto, devolver el operando tal cual (nunca debería llegar aquí)
             return operando;
         }
@@ -671,7 +662,6 @@ public class ExpresionesAritmeticasASM {
                 writer.write("    MOV CX, 5\n");
                 writer.write("    LEA DI, " + variableIzquierda + "_D\n");
                 writer.write("    MOV BX, 10\n\n");
-
                 writer.write("    LOOP_Decimales:\n");
                 writer.write("        XOR DX, DX\n");
                 writer.write("        DIV BX\n");
@@ -681,19 +671,16 @@ public class ExpresionesAritmeticasASM {
                 writer.write("        DEC CX\n");
                 writer.write("        TEST AX, AX\n");
                 writer.write("        JNZ LOOP_Decimales\n\n");
-
                 // Imprimir el punto
                 writer.write("    ;Imprimir punto\n");
                 writer.write("    LEA DX, Punto\n");
                 writer.write("    MOV AH, 09h\n");
                 writer.write("    INT 21h\n\n");
-
                 // Imprimir la parte decimal
                 writer.write("    ;Imprimir parte decimal\n");
                 writer.write("    LEA DX, Decimales\n");
                 writer.write("    MOV AH, 09h\n");
                 writer.write("    INT 21h\n\n");
-
                 // 6) Finalización del programa ASM
                 writer.write("    MOV AH, 4Ch\n");
                 writer.write("    INT 21h\n");
@@ -702,7 +689,6 @@ public class ExpresionesAritmeticasASM {
         }
         /**
          * Convierte una cadena de caracteres en su representación decimal separada por comas.
-         *
          * @param cadena La cadena de entrada a convertir.
          * @return Una cadena con los valores decimales ASCII separados por comas.
          */
@@ -755,15 +741,12 @@ public class ExpresionesAritmeticasASM {
             if (variable.startsWith("T") || variable.equalsIgnoreCase(variableIzquierda)) {
                 return ""; // No generar nada para temporales o la variable principal
             }
-
             // Convertir el valor a una cadena con formato explícito usando Locale.US
             String resultado = String.format(Locale.US, "%.3f", valor);
             String[] partes = resultado.split("\\."); // Separar parte entera y decimal por el punto
-
             // Convertir las partes a enteros para su procesamiento
             int parteEntera = Integer.parseInt(partes[0]);
             int parteDecimal = Integer.parseInt(partes[1]); // Tomar todos los tres dígitos decimales
-
             // Generar declaraciones en formato ASM
             return String.format("%s DW %d\n    %s_D DW %03d\n", variable, parteEntera, variable, parteDecimal);
         }
