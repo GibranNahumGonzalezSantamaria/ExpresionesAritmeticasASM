@@ -564,7 +564,7 @@ public class ExpresionesAritmeticasASM {
             // 2) Declarar la variable principal y sus decimales
             if (variableIzquierda != null) {
                 writer.write("    " + variableIzquierda + " DW ?\n");
-                writer.write("    " + variableIzquierda + "_D DW ?\n\n");
+                writer.write("    " + variableIzquierda + "_D DW ? ;Decimales de '" + variableIzquierda + "'\n\n");
             }
 
             // Declarar las demás variables con sus valores
