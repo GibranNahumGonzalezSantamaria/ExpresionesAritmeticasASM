@@ -580,7 +580,7 @@ public class ExpresionesAritmeticasASM {
             // Declarar variables temporales
             for (int i = 1; i < temporalCounter; i++) {
                 writer.write("    T" + i + " DW ?\n");
-                writer.write("    T" + i + "_D DW ?\n");
+                writer.write("    T" + i + "_D DW ? ;Decimales de 'T" + i + "'\n");
             }
 
             writer.write("\n    ExpresionAritmetica DB '" + expresionFormateada + "', 0Dh, 0Ah, 0Dh, 0Ah, '$'\n");
@@ -782,6 +782,7 @@ public class ExpresionesAritmeticasASM {
         int parteEntera = Integer.parseInt(partes[0]);
         int parteDecimal = Integer.parseInt(partes[1]); // Tomar todos los tres dígitos decimales
         // Generar declaraciones en formato ASM
-        return String.format("%s DW %d\n    %s_D DW %03d\n", variable, parteEntera, variable, parteDecimal);
+        return String.format("%s DW %d\n    %s_D DW %03d ;Decimales de '%s'\n", variable, parteEntera, variable,
+                parteDecimal, variable);
     }
 }
