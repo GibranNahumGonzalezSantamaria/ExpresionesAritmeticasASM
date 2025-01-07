@@ -83,16 +83,13 @@ public class ExpresionesAritmeticasASM {
             // Inicializar listas para temporales e instrucciones ASM
             List<String> temporales = new ArrayList<>();
             List<String> instruccionesASM = new ArrayList<>();
-
             // Procesar la expresión y generar instrucciones ASM
             procesarExpresion(input, temporales, instruccionesASM, valoresVariables);
-
             // Mostrar en consola las operaciones intermedias
             System.out.println();
             for (String temp : temporales) {
                 System.out.println(temp);
             }
-
             // Obtener y mostrar el resultado calculado
             double resultadoNumerico = valoresVariables.get(variableIzquierda);
             System.out.println("\n - Resultado: " + variableIzquierda + " = "
@@ -121,8 +118,7 @@ public class ExpresionesAritmeticasASM {
         }
      }
         /**
-         * Formatea la expresión aritmética agregando espacios alrededor de los operadores
-         * y asegurando una correcta visualización.
+         * Formatea la expresión aritmética agregando espacios alrededor de los operadores y asegurando una correcta visualización.
          * @param expresion La expresión aritmética sin espacios.
          * @return La expresión formateada con espacios adecuados.
          */
@@ -302,8 +298,7 @@ public class ExpresionesAritmeticasASM {
         // PROCESAR LA EXPRESIÓN Y GENERAR INSTRUCCIONES ASM
         // ---------------------------------------------------------------------------------
         /**
-         * Procesa la expresión aritmética, descomponiéndola en operaciones básicas y
-         * generando las instrucciones ASM correspondientes.
+         * Procesa la expresión aritmética, descomponiéndola en operaciones básicas y generando las instrucciones ASM correspondientes.
          * @param expresion        La expresión aritmética a procesar.
          * @param temporales       Lista para almacenar las operaciones temporales.
          * @param instruccionesASM Lista para almacenar las instrucciones ASM generadas.
@@ -317,7 +312,6 @@ public class ExpresionesAritmeticasASM {
                 Map<String, Double> valoresVariables) {
             String[] operadoresJerarquia = { "\\(", "\\*", "/", "\\+", "-", "=" };
             String[] nombresOperadores = { "PAREN", "MUL", "DIV", "ADD", "SUB", "MOV" };
-
             // Procesar paréntesis de manera recursiva
             Pattern patParentesis = Pattern.compile("\\(([^()]+)\\)");
             Matcher matParen;
@@ -326,7 +320,6 @@ public class ExpresionesAritmeticasASM {
                 String temp = procesarExpresion(subExp, temporales, instruccionesASM, valoresVariables);
                 expresion = expresion.replaceFirst(Pattern.quote("(" + subExp + ")"), temp);
             }
-
             // Procesar operadores según su jerarquía
             for (int i = 1; i < operadoresJerarquia.length; i++) {
                 String regex = String.format(
@@ -509,8 +502,7 @@ public class ExpresionesAritmeticasASM {
             return sb.toString();
         }
         /**
-         * Genera el archivo ASM con las secciones de datos y código, incluyendo las
-         * instrucciones y variables necesarias.
+         * Genera el archivo ASM con las secciones de datos y código, incluyendo las instrucciones y variables necesarias.
          * @param instruccionesASM    Lista de instrucciones ASM generadas.
          * @param valoresVariables    Mapa que asocia variables con sus valores numéricos.
          * @param variableIzquierda  La variable que recibe el resultado de la expresión.
@@ -649,13 +641,11 @@ public class ExpresionesAritmeticasASM {
                 writer.write("        DEC CX\n");
                 writer.write("        TEST AX, AX\n");
                 writer.write("        JNZ LOOP_Enteros\n\n");
-
                 // Imprimir la parte entera
                 writer.write("    ;Imprimir parte entera\n");
                 writer.write("    LEA DX, Enteros\n");
                 writer.write("    MOV AH, 09h\n");
                 writer.write("    INT 21h\n\n");
-
                 // Conversión de la parte decimal
                 writer.write("    ;Conversión de '" + variableIzquierda + "_D' a texto (Decimales)\n");
                 writer.write("    MOV AX, " + variableIzquierda + "_D\n");
@@ -708,7 +698,6 @@ public class ExpresionesAritmeticasASM {
         // ---------------------------------------------------------------------------------
         /**
          * Agrega el encabezado estándar de un archivo ASM, incluyendo .MODEL y .STACK.
-         *
          * @param writer El objeto FileWriter para escribir en el archivo ASM.
          * @throws IOException Si ocurre un error al escribir en el archivo.
          */
@@ -719,7 +708,6 @@ public class ExpresionesAritmeticasASM {
         }
         /**
          * Agrega la sección de código inicial de un archivo ASM, incluyendo la inicialización del segmento de datos.
-         *
          * @param writer El objeto FileWriter para escribir en el archivo ASM.
          * @throws IOException Si ocurre un error al escribir en el archivo.
          */
